@@ -1,20 +1,16 @@
 name: Public exhibition verification
 on:
-  workflow_run:
-    workflows: [pages build and deployment]
-    types: [completed]
+  push:
     branches: [main]
 permissions:
   contents: read
 jobs:
   public:
-    if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
@@ -22,6 +18,8 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts
       - run: npx playwright install --with-deps chromium
+      - name: Wait for this checkout on GitHub Pages
+        run: node scripts/wait-public.mjs
       - run: npm run test:browser
         env:
           TEST_BASE_URL: https://djnaoyaman.github.io/1minutes/
