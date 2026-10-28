@@ -1,144 +1,25 @@
-import { test, expect } from '@playwright/test';
-async function choose(page, kind) {
-  await page.locator(`[data-exp="${kind}"]`).click();
-  await page.getByRole('button', { name: '実験をはじめる', exact: true }).click();
-}
-async function virtual(page) {
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.clock.install({ time: new Date('2026-10-28T00:00:00Z') });
-  await page.goto('/');
-  await page.clock.pauseAt(new Date('2026-10-28T00:00:01Z'));
-}
-test('layout and keyboard: original exhibition, no horizontal overflow', async ({ page }, testInfo) => {
-  await page.goto('/');
-  await expect(page).toHaveTitle('1minutes — ONE MINUTE FOREVER');
-  await expect(page.locator('[data-exp]')).toHaveCount(3);
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  await page.screenshot({ path: testInfo.outputPath('home.png'), fullPage: true });
-  if (testInfo.project.name === 'mobile') {
-    await page.setViewportSize({width: 320, height: 740});
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-    await page.screenshot({path: testInfo.outputPath('home-320.png'), fullPage: true});
-  }
-  await page.locator('[data-exp="count"]').focus();
-  await page.keyboard.press('Enter');
-  await expect(page.getByRole('button', { name: '実験をはじめる', exact: true })).toBeVisible();
+import {test,expect} from '@playwright/test';
+const kinds=['wait','flow','anticipation','count','overload','stillness','memory','choice','repetition','novelty','rhythm','synchrony'];
+const key='1minutes-results-v3';
+async function select(page,kind){await page.locator(`[data-exp="${kind}"]`).click();await page.getByRole('button',{name:'実験をはじめる',exact:true}).click();}
+async function finish(page,kind){await expect(page.locator('#estimate')).toBeVisible({timeout:67000});await page.locator('#estimate').fill('73');await page.locator('#estimate-form button').click();if(kind==='memory'){await page.locator('.recall-grid button').first().click();await page.getByRole('button',{name:'記憶と時間の結果を見る'}).click();}await expect(page.locator('.result-delta')).toContainText('+13');}
+for(const kind of kinds)test(`real 60 second complete lifecycle: ${kind}`,async({page},info)=>{
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('./');await expect(page.locator('[data-exp]')).toHaveCount(12);await select(page,kind);await page.waitForTimeout(550);
+ const selector={flow:'.flow-node.lit',anticipation:'.door',count:'.mark-button',overload:'.archive-grid button[aria-label="◎"]',choice:'[data-side="0"]',repetition:'.stamp-button',novelty:'.novel-button',rhythm:'.pulse-pad',synchrony:'.self-disc'}[kind];
+ if(selector)await page.locator(selector).click();if(kind==='stillness')await page.locator('.light-field').hover();
+ await expect(page.locator('#stage')).toBeVisible();await expect(page.locator('#mute')).toBeInViewport();await page.screenshot({path:info.outputPath(`${kind}-running.png`)});
+ const started=Date.now();await finish(page,kind);expect(Date.now()-started).toBeGreaterThan(57000);
+ const saved=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)),key);expect(saved).toHaveLength(1);expect(saved[0].experiment).toBe(kind);expect(saved[0].actual).toBeGreaterThanOrEqual(60);expect(saved[0].actual).toBeLessThan(61.5);expect(saved[0].version).toBe(3);if(kind==='count')expect(saved[0].mark).toBeGreaterThan(.4);
+ await page.reload();await expect(page.locator('#history-list li')).toHaveCount(1);await expect(page.locator('.compare-row')).toHaveCount(12);expect(errors).toEqual([]);
 });
-for (const kind of ['wait', 'flow']) test(`${kind}: 60s, estimate validation, result, history, retry`, async ({ page }, testInfo) => {
-  await virtual(page); await choose(page, kind);
-  if (kind === 'wait') await page.screenshot({path: testInfo.outputPath('wait-running.png')});
-  if (kind === 'flow') {
-    await page.locator('.tile.active').click(); await expect(page.locator('#score')).toHaveText('1');
-    await page.screenshot({ path: testInfo.outputPath('flow.png') });
-  }
-  await page.clock.runFor(59900);
-  await expect(page.getByRole('button', { name: '実験を中断', exact: true })).toBeVisible();
-  await page.clock.runFor(100);
-  await expect(page.locator('#estimate')).toBeVisible();
-  await page.getByRole('button', { name: '結果を見る', exact: true }).click();
-  await expect(page.locator('#estimate-error')).not.toBeEmpty();
-  await page.locator('#estimate').fill('-1');
-  await page.getByRole('button', { name: '結果を見る', exact: true }).click();
-  await expect(page.locator('#history-list li')).toHaveCount(0);
-  await page.locator('#estimate').fill('75.5');
-  await page.getByRole('button', { name: '結果を見る', exact: true }).click();
-  await expect(page.locator('.result-delta')).toContainText('+15.5');
-  await expect(page.locator('#history-list li')).toHaveCount(1);
-  await page.screenshot({ path: testInfo.outputPath(`${kind}-result.png`), fullPage: true });
-  await page.getByRole('button', { name: 'もう一度体験する', exact: true }).click();
-  await page.getByRole('button', { name: '実験をはじめる', exact: true }).click();
-  await page.clock.runFor(500);
-  await page.getByRole('button', { name: '実験を中断', exact: true }).click();
-  await expect(page.locator('#history-list li')).toHaveCount(1);
-  await page.reload(); await expect(page.locator('#history-list li')).toHaveCount(1);
-  await page.locator('#clear-history').click(); await page.locator('#clear-history').click();
-  await expect(page.locator('#history-list li')).toHaveCount(0);
-});
-test('COUNT: may exceed 60s, stop only once, saved with actual/target', async ({ page }, testInfo) => {
-  await virtual(page); await choose(page, 'count'); await page.clock.runFor(72500);
-  await expect(page.locator('#stop-count')).toBeVisible();
-  await page.screenshot({path: testInfo.outputPath('count-running.png')});
-  await page.locator('#stop-count').click();
-  await expect(page.locator('.result-delta')).toContainText('+12.5');
-  await expect(page.locator('#history-list li')).toHaveCount(1);
-  await expect(page.locator('#history-list')).toContainText('停止 72.5秒');
-  await page.screenshot({path: testInfo.outputPath('count-result.png'), fullPage: true});
-});
-test('interrupted hidden page, long stall and maximum COUNT do not save', async ({ page }) => {
-  await virtual(page); await choose(page, 'wait');
-  await page.evaluate(() => { Object.defineProperty(document, 'hidden', { configurable: true, get: () => true }); document.dispatchEvent(new Event('visibilitychange')); });
-  await expect(page.getByRole('heading', { name: '時間が途切れました。' })).toBeVisible();
-  await expect(page.locator('#history-list li')).toHaveCount(0);
-  await page.evaluate(() => { delete document.hidden; });
-  await choose(page, 'flow'); await page.clock.fastForward(10000);
-  await expect(page.getByRole('heading', { name: '時間が途切れました。' })).toBeVisible();
-  await choose(page, 'count'); await page.clock.runFor(300000);
-  await expect(page.locator('#panel')).toContainText('5分の上限');
-  await expect(page.locator('#history-list li')).toHaveCount(0);
-});
-test('aborts, navigation, reduced motion and corrupt storage remain usable', async ({ page }) => {
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.goto('/');
-  await page.evaluate(() => localStorage.setItem('1minutes-results-v2', '{broken'));
-  await page.reload(); await choose(page, 'wait');
-  expect(await page.locator('.dot').evaluate(el => getComputedStyle(el).animationName)).toBe('none');
-  await page.evaluate(() => window.dispatchEvent(new PopStateEvent('popstate')));
-  await expect(page.getByRole('heading', { name: '時間が途切れました。' })).toBeVisible();
-  await page.getByRole('button', { name: 'もう一度', exact: true }).click();
-  await page.getByRole('button', { name: '実験をはじめる', exact: true }).dblclick();
-  await expect(page.getByRole('button', {name:'実験を中断',exact:true})).toBeVisible();
-  await page.waitForTimeout(450);
-  await page.getByRole('button', { name: '実験を中断', exact: true }).click();
-  await expect(page.getByRole('heading', {name:'時間が途切れました。'})).toBeVisible();
-  await expect(page.locator('#history-list li')).toHaveCount(0);
-});
-for (const kind of ['wait', 'flow', 'count']) test(`real-clock ${kind}`, async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name !== 'desktop', 'Real-time run once per experiment; mobile uses controlled clock coverage.');
-  await page.goto('/'); await choose(page, kind);
-  if (kind === 'count') {
-    await page.waitForTimeout(62000);
-    await expect(page.locator('#stop-count')).toBeVisible();
-    await page.locator('#stop-count').click();
-  } else {
-    await expect(page.locator('#estimate')).toBeVisible({ timeout: 65000 });
-    await page.locator('#estimate').fill('60');
-    await page.getByRole('button', { name: '結果を見る', exact: true }).click();
-  }
-  const actual = await page.evaluate(() => JSON.parse(localStorage.getItem('1minutes-results-v2'))[0].actual);
-  expect(actual).toBeGreaterThanOrEqual(kind === 'count' ? 62 : 60);
-  expect(actual).toBeLessThan(kind === 'count' ? 64 : 60.6);
-  console.log(`REAL_CLOCK ${kind}: ${actual.toFixed(3)} seconds`);
-});
+test('fixed60 COUNT missing marker is censored and all12 references render',async({page})=>{await page.clock.install();await page.goto('./');await expect(page.locator('#science-entries details')).toHaveCount(12);await expect(page.locator('#science-count')).toContainText('未回答');await expect(page.locator('#science-entries a')).toHaveCount(15);await select(page,'count');await page.clock.runFor(60040);await finish(page,'count');await expect(page.locator('#panel')).toContainText('60秒内に未回答');const r=await page.evaluate(k=>JSON.parse(localStorage.getItem(k))[0],key);expect(r.mark).toBeNull();});
+test('cancel reload and repeated runs do not save partial sessions',async({page})=>{await page.clock.install();await page.goto('./');await select(page,'flow');await page.clock.runFor(500);await page.getByRole('button',{name:'実験を中断',exact:true}).click();await expect(page.locator('#panel')).toContainText('保存・比較に含めません');await page.locator('[data-exp="memory"]').click();await page.getByRole('button',{name:'実験をはじめる',exact:true}).click();await page.reload();await expect(page.locator('#panel')).toContainText('途中のリロード');expect(await page.evaluate(k=>localStorage.getItem(k),key)).toBeNull();await select(page,'flow');await page.clock.runFor(60040);await finish(page,'flow');await page.getByRole('button',{name:'もう一度体験する'}).click();await page.getByRole('button',{name:'実験をはじめる',exact:true}).click();await page.clock.runFor(60040);await finish(page,'flow');await expect(page.locator('#history-list li')).toHaveCount(2);});
+test('visibility, navigation and large scheduling gap interrupt',async({page})=>{await page.clock.install();await page.goto('./');await select(page,'rhythm');await page.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,value:true});document.dispatchEvent(new Event('visibilitychange'));});await expect(page.locator('#panel')).toContainText('画面を離れた');await page.evaluate(()=>Object.defineProperty(document,'hidden',{configurable:true,value:false}));await select(page,'synchrony');await page.evaluate(()=>dispatchEvent(new PopStateEvent('popstate')));await expect(page.locator('#panel')).toContainText('画面を離れた');await select(page,'wait');await page.clock.fastForward(5000);await expect(page.locator('#panel')).toContainText('大きな遅延');expect(await page.evaluate(k=>localStorage.getItem(k),key)).toBeNull();});
+test('validation double submission and delete confirmation',async({page})=>{await page.clock.install();await page.goto('./');await select(page,'choice');await page.clock.runFor(60040);await page.locator('#estimate-form button').click();await expect(page.locator('#estimate-error')).toContainText('入力');await page.locator('#estimate').fill('72');await page.locator('#estimate-form').evaluate(f=>{f.requestSubmit();f.requestSubmit();});await expect(page.locator('#history-list li')).toHaveCount(1);await page.locator('#clear-history').click();await expect(page.locator('#history-list li')).toHaveCount(1);await page.locator('#clear-history').click();await expect(page.locator('#history-list li')).toHaveCount(0);});
+test('blocked storage retains page memory and safe corruption',async({page})=>{await page.addInitScript(()=>Object.defineProperty(window,'localStorage',{get(){throw Error('blocked');}}));await page.clock.install();await page.goto('./');await select(page,'wait');await page.clock.runFor(60040);await finish(page,'wait');await expect(page.locator('#panel')).toContainText('ページを開いている間だけ');await expect(page.locator('#history-list li')).toHaveCount(1);});
+test('legacy COUNT stays outside12comparison and malformed v3 rejected',async({page})=>{await page.addInitScript(()=>localStorage.setItem('1minutes-results-v2',JSON.stringify([{experiment:'count',actual:81,felt:60,score:0,at:'2026-10-28T00:00:00Z'}])));await page.goto('./');await expect(page.locator('#history-list')).toContainText('旧方式');await expect(page.locator('.compare-row').nth(3)).toContainText('未体験');await page.evaluate(k=>localStorage.setItem(k,JSON.stringify([{version:3,experiment:'wait',actual:1,felt:60,score:0,at:'2026-10-28T00:00:00Z'}])),key);await page.reload();await expect(page.locator('#history-list li')).toHaveCount(0);});
+test('sound is opt-in and mute controls reachable; reduced motion layout',async({page},info)=>{await page.emulateMedia({reducedMotion:'reduce'});await page.clock.install();await page.goto('./');await expect(page.locator('#mute')).toHaveAttribute('aria-pressed','false');await select(page,'rhythm');await page.clock.runFor(1000);await expect(page.locator('#mute')).toBeInViewport();await page.locator('#mute').click();await expect(page.locator('#mute')).toHaveAttribute('aria-pressed','true');await page.locator('#mute').click();await expect(page.locator('#mute')).toHaveAttribute('aria-pressed','false');expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();await page.screenshot({path:info.outputPath('reduced-motion.png')});});
+test('all12 cards and reference typography narrow layout',async({page},info)=>{await page.setViewportSize({width:320,height:750});await page.goto('./');await expect(page.locator('#science-entries details')).toHaveCount(12);for(const kind of kinds){await page.locator(`[data-exp="${kind}"]`).click();await page.locator('.science-link').click();await expect(page.locator(`#science-${kind}`)).toHaveAttribute('open','');expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();}await page.locator('#science-synchrony summary').click();await page.screenshot({path:info.outputPath('exhibition-320.png'),fullPage:true});});
 
-test('unavailable browser storage still allows a valid session result', async ({ page }) => {
-  await page.addInitScript(() => Object.defineProperty(window, 'localStorage', { get() { throw new Error('Storage unavailable'); } }));
-  await virtual(page); await choose(page, 'count'); await page.clock.runFor(45000);
-  await page.locator('#stop-count').click();
-  await expect(page.locator('.result-delta')).toContainText('−15');
-  await expect(page.locator('#panel')).toContainText('このページを開いている間だけ');
-  await expect(page.locator('#history-list li')).toHaveCount(1);
-});
-
-test('canonical and social metadata point to public deployment; assets load', async ({ page, request }) => {
-  await page.goto('/');
-  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', 'https://djnaoyaman.github.io/1minutes/');
-  await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', 'https://djnaoyaman.github.io/1minutes/assets/og.png');
-  expect((await request.get('/assets/og.png')).status()).toBe(200);
-  expect((await request.get('/assets/favicon.svg')).status()).toBe(200);
-});
-
-test('two actual touch taps do not activate a replacement control', async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name !== 'mobile', 'Actual touch input requires the touch-enabled mobile context.');
-  await page.emulateMedia({reducedMotion:'reduce'}); await page.goto('/');
-  await page.locator('[data-exp="wait"]').tap();
-  const start=page.getByRole('button',{name:'実験をはじめる',exact:true});
-  await start.scrollIntoViewIfNeeded();
-  const box=await start.boundingBox();
-  await page.touchscreen.tap(box.x+box.width/2,box.y+box.height/2);
-  await page.touchscreen.tap(box.x+box.width/2,box.y+box.height/2);
-  const abort=page.getByRole('button',{name:'実験を中断',exact:true});
-  await expect(abort).toBeVisible();
-  await page.waitForTimeout(450); await abort.tap();
-  await expect(page.getByRole('heading',{name:'時間が途切れました。'})).toBeVisible();
-  await expect(page.locator('#history-list li')).toHaveCount(0);
-});
+test('audio starts only after explicit opt-in and cleans every voice',async({page})=>{await page.addInitScript(()=>{window.audioAudit={created:0,started:0,active:0};class A{constructor(){window.audioAudit.created++;this.state='suspended';this.currentTime=0;this.destination={};}resume(){this.state='running';return Promise.resolve();}createGain(){return{gain:{setValueAtTime(){},linearRampToValueAtTime(){},exponentialRampToValueAtTime(){}},connect(){},disconnect(){}};}createOscillator(){let active=false;return{frequency:{value:0},connect(){},disconnect(){},start(){active=true;window.audioAudit.started++;window.audioAudit.active++;},stop(at){if(at!==undefined)return;if(active){active=false;window.audioAudit.active--;}this.onended?.();}};}}window.AudioContext=A;});await page.clock.install();await page.goto('./');await select(page,'rhythm');await page.clock.runFor(2000);expect(await page.evaluate(()=>window.audioAudit.started)).toBe(0);await page.locator('#mute').click();await page.clock.runFor(1000);expect(await page.evaluate(()=>window.audioAudit.started)).toBeGreaterThan(0);expect(await page.evaluate(()=>window.audioAudit.active)).toBeGreaterThan(0);await page.locator('#mute').click();const starts=await page.evaluate(()=>window.audioAudit.started);await page.clock.runFor(2000);expect(await page.evaluate(()=>window.audioAudit.started)).toBe(starts);expect(await page.evaluate(()=>window.audioAudit.active)).toBe(0);await page.locator('#mute').click();await page.clock.runFor(1000);expect(await page.evaluate(()=>window.audioAudit.active)).toBeGreaterThan(0);await page.getByRole('button',{name:'実験を中断',exact:true}).click();expect(await page.evaluate(()=>window.audioAudit.active)).toBe(0);});
+test('320px running stages fit and start-doubletap cannot mark COUNT',async({page},info)=>{await page.setViewportSize({width:320,height:750});await page.clock.install();await page.goto('./');for(const kind of kinds){await page.locator(`[data-exp="${kind}"]`).click();await page.getByRole('button',{name:'実験をはじめる',exact:true}).click();if(kind==='count'){await page.locator('.mark-button').dispatchEvent('click',{detail:1});await expect(page.locator('.mark-button')).toBeEnabled();}await page.clock.runFor(600);const box=await page.locator('#stage').boundingBox();const stageOverflow=await page.locator('#stage').evaluate(e=>e.scrollWidth>e.clientWidth);expect(stageOverflow,kind).toBeFalsy();expect(box.width).toBeGreaterThan(200);await page.screenshot({path:info.outputPath(`${kind}-320-running.png`)});await page.getByRole('button',{name:'実験を中断',exact:true}).click();}});

@@ -1,0 +1,35 @@
+name: Public exhibition verification
+on:
+  workflow_run:
+    workflows: [pages build and deployment]
+    types: [completed]
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  public:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:browser
+        env:
+          TEST_BASE_URL: https://djnaoyaman.github.io/1minutes/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: public-browser-review
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7

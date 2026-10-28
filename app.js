@@ -1,197 +1,39 @@
-import { SessionClock, validEstimate, readRecords, saveRecords, nextTarget, STORAGE_KEY } from './core.js';
-
-const panel = document.getElementById('panel');
-const announcer = document.getElementById('announcer');
-const cards = [...document.querySelectorAll('[data-exp]')];
-const historyList = document.getElementById('history-list');
-const clearButton = document.getElementById('clear-history');
-let storage;
-try { storage = window.localStorage; } catch { /* Private/blocked storage: session only. */ }
-let records = storage ? readRecords(storage) : [];
-let experiment = 'wait';
-let phase = 'idle';
-let clock = null;
-let timer = null;
-let actual = 0;
-let score = 0;
-let target = 0;
-let clearPending = false;
-let controlsReadyAt = 0;
-const names = { wait: 'WAIT', flow: 'FLOW', count: 'COUNT' };
-const descriptions = {
-  wait: '何もせず、白い点を見つめてください。時計は表示されません。60秒後、感じた長さを答えます。',
-  flow: '白く光る数字を押してください。正解すると、別の数字が光ります。60秒後、感じた長さを答えます。',
-  count: '時計を見ずに、60秒経ったと思った瞬間に止めてください。60秒を過ぎても、自動では止まりません。'
-};
-const fmt = value => Number(value.toFixed(1)).toLocaleString('ja-JP', { maximumFractionDigits: 1 });
-const signed = value => `${value > 0 ? '+' : value < 0 ? '−' : '±'}${fmt(Math.abs(value))}`;
-const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-function announce(message) { announcer.textContent = message; }
-function cleanup() {
-  clearTimeout(timer);
-  timer = null;
-  if (clock?.status === 'running') clock.cancel();
-  clock = null;
-  cards.forEach(card => { card.disabled = false; });
-  document.body.classList.remove('experiment-running');
-}
-function render(markup, focus = true) {
-  panel.innerHTML = markup;
-  const heading = panel.querySelector('h2');
-  if (focus && heading) { heading.tabIndex = -1; heading.focus({ preventScroll: true }); }
-}
-function button(label, action, className = 'primary') {
-  const element = document.createElement('button');
-  element.type = 'button'; element.className = className; element.textContent = label;
-  // A second tap must not activate a different control inserted at the same position.
-  element.addEventListener('click', event => {
-    if (event.detail > 1) return;
-    // Touch browsers can report each tap as detail=1. Briefly shield newly
-    // inserted run controls from the tap that started the experiment.
-    // Keyboard activation (detail=0) remains immediately available.
-    if (phase === 'running' && event.detail > 0 && performance.now() < controlsReadyAt) return;
-    action(event);
-  });
-  panel.appendChild(element);
-  return element;
-}
-function select(kind, scroll = true) {
-  if (!Object.hasOwn(names, kind)) return;
-  cleanup(); experiment = kind; phase = 'ready';
-  render(`<div class="eyebrow">EXPERIMENT / ${names[kind]}</div><h2>${names[kind]}.</h2><p>${descriptions[kind]}</p><p class="fineprint">画面の切替・ロック・大きな動作遅延で中断します。中断した結果は記録しません。${kind === 'count' ? '最大5分で終了します。' : ''}</p>`);
-  button('実験をはじめる', begin);
-  if (scroll) panel.scrollIntoView({ behavior: reducedMotion() ? 'instant' : 'smooth', block: 'center' });
-}
-function begin() {
-  if (phase !== 'ready' || document.hidden) return;
-  phase = 'running'; score = 0;
-  controlsReadyAt = performance.now() + 400;
-  cards.forEach(card => { card.disabled = true; });
-  document.body.classList.add('experiment-running');
-  if (experiment === 'wait') {
-    render('<h2 class="sr-only">WAIT 実験中</h2><div class="dot" aria-hidden="true"></div>', false);
-  } else if (experiment === 'count') {
-    render('<div class="eyebrow">LISTEN TO YOUR INNER CLOCK</div><h2>今だ、と思ったら。</h2>', false);
-    button('60秒経った', stopCount).id = 'stop-count';
-  } else {
-    render('<div class="eyebrow">TAP THE LIT NUMBER</div><h2><span class="sr-only">正解タップ数 </span><span id="score">0</span></h2><div id="game" class="game" role="group" aria-label="白い数字を押してください"></div>', false);
-    const game = document.getElementById('game');
-    target = Math.floor(Math.random() * 8);
-    for (let index = 0; index < 8; index++) {
-      const tile = document.createElement('button');
-      tile.type = 'button'; tile.className = 'tile'; tile.textContent = index + 1;
-      tile.addEventListener('click', () => {
-        if (phase !== 'running' || !checkClock() || index !== target) return;
-        score += 1;
-        target = nextTarget(target);
-        document.getElementById('score').textContent = score;
-        paint();
-      });
-      game.appendChild(tile);
-    }
-    function paint() {
-      [...game.children].forEach((tile, index) => {
-        tile.classList.toggle('active', index === target);
-        tile.setAttribute('aria-label', `${index + 1}${index === target ? '、今のターゲット' : ''}`);
-      });
-    }
-    paint();
-  }
-  const abort = button('実験を中断', () => interrupt('cancel'), 'abort');
-  clock = new SessionClock(experiment);
-  (document.getElementById('stop-count') || panel.querySelector('.tile.active') || abort).focus({ preventScroll: true });
-  announce(`${names[experiment]} の実験を開始しました。`);
-  schedule();
-}
-function schedule() { timer = setTimeout(() => { if (checkClock()) schedule(); }, 50); }
-function checkClock() {
-  if (phase !== 'running' || !clock) return false;
-  const sample = clock.sample(document.hidden);
-  if (sample.status === 'interrupted') { interrupt(sample.reason); return false; }
-  if (sample.status === 'complete') { actual = sample.elapsedMs / 1000; cleanup(); estimate(); return false; }
-  return true;
-}
-function stopCount() {
-  if (phase !== 'running' || experiment !== 'count' || !clock) return;
-  const sample = clock.stop(document.hidden);
-  if (sample.status !== 'complete') { interrupt(sample.reason); return; }
-  actual = sample.elapsedMs / 1000;
-  if (actual < 0.1) { interrupt('cancel'); return; }
-  cleanup(); result(60);
-}
-function interrupt(reason) {
-  cleanup(); phase = 'interrupted';
-  const message = reason === 'cancel' ? '実験を中断しました。' : reason === 'limit' ? '5分の上限に達したため、実験を終了しました。' : reason === 'hidden' ? '画面を離れたため、計測を終了しました。' : '端末の休止や動作の遅れを検出したため、計測を終了しました。';
-  render(`<div class="eyebrow">EXPERIMENT INTERRUPTED</div><h2>時間が途切れました。</h2><p>${message}<br>この回の結果は記録されていません。</p>`);
-  button('もう一度', () => select(experiment, false));
-  announce(message);
-}
-function estimate() {
-  phase = 'estimate';
-  render('<div class="eyebrow">THE MINUTE HAS PASSED</div><h2>何秒に感じましたか。</h2><form id="estimate-form" novalidate><label for="estimate">感じた時間（秒）</label><div class="estimate-field"><input id="estimate" type="number" inputmode="decimal" min="0.1" max="3600" step="0.1" placeholder="秒数を入力" required aria-describedby="estimate-help estimate-error"><span aria-hidden="true">秒</span></div><p id="estimate-help" class="fineprint">0.1〜3,600秒の間で、直感で答えてください。</p><p id="estimate-error" class="error" role="alert"></p><button class="primary" type="submit">結果を見る</button></form>');
-  document.getElementById('estimate-form').addEventListener('submit', event => {
-    event.preventDefault();
-    if (phase !== 'estimate') return;
-    const input = document.getElementById('estimate');
-    const felt = validEstimate(input.value);
-    if (felt === null) {
-      document.getElementById('estimate-error').textContent = '0.1〜3,600の数値を秒単位で入力してください。';
-      input.setAttribute('aria-invalid', 'true'); input.focus(); return;
-    }
-    result(felt);
-  });
-  button('記録せず展示へ戻る', () => select(experiment, false), 'secondary');
-  announce('60秒が過ぎました。感じた秒数を入力してください。');
-}
-function result(felt) {
-  if (!['running', 'estimate'].includes(phase)) return;
-  phase = 'result';
-  const isCount = experiment === 'count';
-  const delta = isCount ? actual - 60 : felt - actual;
-  const second = isCount ? actual : felt;
-  const scale = Math.max(60, actual, felt);
-  const message = Math.abs(delta) < 0.05 ? 'ほぼ同じ長さでした。' : isCount
-    ? (delta > 0 ? '60秒より遅く止めました。' : '60秒より早く止めました。')
-    : (delta > 0 ? '実際より長く感じました。' : '実際より短く感じました。');
-  render(`<div class="eyebrow">YOUR SUBJECTIVE TIME / ${names[experiment]}</div><h2>あなたの60秒。</h2><div class="stats"><div><b>${fmt(isCount ? 60 : actual)}</b><small>${isCount ? '目標の秒数' : '実際の計測（秒）'}</small></div><div><b>${fmt(second)}</b><small>${isCount ? 'あなたが止めた時間（秒）' : 'あなたが感じた時間（秒）'}</small></div></div><div class="comparison" role="img" aria-label="${isCount ? '目標60秒と停止時間' : '実時間と体感時間'}の差 ${signed(delta)}秒"><div style="width:${(isCount ? 60 : actual) / scale * 100}%"></div><div style="width:${second / scale * 100}%"></div></div><p class="result-delta">${signed(delta)}<span> 秒</span></p><p>${message}</p><p class="fineprint">${experiment === 'flow' ? `正解タップ ${score}回。<br>` : ''}これは一度の体験結果であり、性格や能力を示すものではありません。<br>ブラウザでの計測には、描画や操作の遅れが含まれます。</p>`);
-  const record = { experiment, felt, actual, score, at: new Date().toISOString() };
-  records = [...records, record].slice(-100);
-  const saved = storage && saveRecords(storage, records);
-  const note = document.createElement('p'); note.className = 'fineprint';
-  note.textContent = saved ? 'このブラウザに保存しました。' : '保存機能を利用できないため、このページを開いている間だけ記録します。';
-  panel.appendChild(note);
-  renderHistory();
-  button('もう一度体験する', () => select(experiment, false));
-  button('別の展示を選ぶ', () => {
-    cleanup(); phase = 'idle';
-    render('<div class="eyebrow">NEXT EXPERIMENT</div><h2>次の60秒へ。</h2><p>上の展示から選んでください。</p>');
-    cards[0].focus({ preventScroll: true }); cards[0].scrollIntoView({ behavior: reducedMotion() ? 'instant' : 'smooth', block: 'center' });
-  }, 'secondary');
-  announce(`${names[experiment]} の結果。${message} 差は ${signed(delta)} 秒です。`);
-}
-function renderHistory() {
-  historyList.replaceChildren();
-  clearButton.hidden = records.length === 0;
-  document.getElementById('history-empty').hidden = records.length > 0;
-  for (const record of records.slice(-12).reverse()) {
-    const row = document.createElement('li');
-    const title = document.createElement('strong'); title.textContent = names[record.experiment];
-    const value = document.createElement('span');
-    value.textContent = record.experiment === 'count' ? `目標 60秒 → 停止 ${fmt(record.actual)}秒` : `実際 ${fmt(record.actual)}秒 → 体感 ${fmt(record.felt)}秒`;
-    row.append(title, value); historyList.appendChild(row);
-  }
-}
-clearButton.addEventListener('click', () => {
-  if (!clearPending) { clearPending = true; clearButton.textContent = '本当にすべて削除する'; return; }
-  records = []; clearPending = false;
-  let failed = false;
-  try { storage?.removeItem(STORAGE_KEY); storage?.removeItem('1minutes-results'); } catch { failed = true; }
-  clearButton.textContent = '記録をすべて削除'; renderHistory();
-  announce(failed ? 'このページの記録を削除しました。保存済みデータの削除はブラウザ設定から行ってください。' : 'このブラウザの記録を削除しました。');
-});
-clearButton.addEventListener('blur', () => { clearPending = false; clearButton.textContent = '記録をすべて削除'; });
-cards.forEach(card => card.addEventListener('click', () => select(card.dataset.exp)));
-document.addEventListener('visibilitychange', () => { if (document.hidden && phase === 'running') interrupt('hidden'); });
-window.addEventListener('pagehide', () => { if (phase === 'running') interrupt('hidden'); });
-window.addEventListener('popstate', () => { if (phase === 'running') interrupt('hidden'); });
-renderHistory();
+import {SessionClock,validEstimate,readRecords,saveRecords,compareRecords,STORAGE_KEY} from './core.js';
+import {exhibits,byId} from './experiments.js';
+import {createStage} from './stages.js';
+const $=s=>document.querySelector(s),panel=$('#panel'),announcer=$('#announcer');
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let storage;try{storage=window.localStorage;}catch{}
+let records=storage?readRecords(storage):[],kind='wait',phase='idle',clock=null,timer=null,stage=null,actual=0,summary={},felt=0,controlsAt=0,clearPending=false;
+let audio=null,muted=true,soundReady=false;const voices=new Set();const RUN_KEY='1minutes-active-v3';
+let recovered=false;try{recovered=Boolean(sessionStorage.getItem(RUN_KEY));sessionStorage.removeItem(RUN_KEY);}catch{}
+const fmt=n=>Number(n.toFixed(1)).toLocaleString('ja-JP',{maximumFractionDigits:1});
+const signed=n=>`${n>0?'+':n<0?'−':'±'}${fmt(Math.abs(n))}`;
+const motion=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
+let research=null;fetch('./research.json').then(r=>r.json()).then(data=>{research=data;renderScience();}).catch(()=>{$('#science-load').textContent='参考資料を読み込めませんでした。通信状態を確認して再読込してください。';});
+function announce(s){announcer.textContent=s;}
+function render(html,focus=true){panel.innerHTML=html;const h=panel.querySelector('h2');if(focus&&h){h.tabIndex=-1;h.focus({preventScroll:true});}}
+function button(text,handler,cls='primary'){const b=document.createElement('button');b.type='button';b.className=cls;b.textContent=text;b.addEventListener('click',e=>{if(e.detail>1)return;if(phase==='running'&&e.detail>0&&performance.now()<controlsAt)return;handler();});panel.append(b);return b;}
+function stopSound(){voices.forEach(v=>{try{v.stop();}catch{}});voices.clear();}
+function tone(frequency,duration){if(muted||!soundReady||!audio||audio.state!=='running')return;const o=audio.createOscillator(),g=audio.createGain(),t=audio.currentTime;o.frequency.value=frequency;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.035,t+.01);g.gain.exponentialRampToValueAtTime(.001,t+duration);o.connect(g);g.connect(audio.destination);voices.add(o);o.onended=()=>{voices.delete(o);o.disconnect();g.disconnect();};o.start(t);o.stop(t+duration+.01);}
+function enableSound(){try{if(!audio)audio=new(window.AudioContext||window.webkitAudioContext)();audio.resume().then(()=>{soundReady=audio.state==='running';if(!soundReady)announce('音声を利用できません。光の拍で続けられます。');}).catch(()=>announce('音声を利用できません。光の拍で続けられます。'));}catch{announce('音声を利用できません。光の拍で続けられます。');}}
+$('#mute').addEventListener('click',()=>{muted=!muted;if(!muted)enableSound();else stopSound();$('#mute').textContent=muted?'音：オフ':'音：オン';$('#mute').setAttribute('aria-pressed',String(!muted));});
+function cleanup(){clearTimeout(timer);timer=null;clock?.cancel();clock=null;stopSound();document.body.classList.remove('experiment-running');document.querySelectorAll('[data-exp]').forEach(b=>b.disabled=false);try{sessionStorage.removeItem(RUN_KEY);}catch{}}
+function select(id,scroll=true){if(!byId[id])return;cleanup();kind=id;phase='ready';panel.dataset.experiment=id;panel.style.setProperty('--accent',byId[id].color);const e=byId[id];render(`<div class="eyebrow">${e.name} / ${e.tag}</div><h2>${e.title}</h2><p>${e.instruction}</p><p class="fineprint">実時間60秒。残り時間は表示しません。<br>画面切替・ロック・大きな遅延は中断し、結果に含めません。</p><a class="science-link" href="#science-${id}">この体験の意図と参考文献 ↗</a>`);button('実験をはじめる',begin);if(scroll)panel.scrollIntoView({behavior:motion()?'instant':'smooth',block:'start'});}
+function begin(){if(phase!=='ready'||document.hidden)return;phase='running';summary={};controlsAt=performance.now()+450;document.body.classList.add('experiment-running');document.querySelectorAll('[data-exp]').forEach(b=>b.disabled=true);if(!muted&&['rhythm','synchrony'].includes(kind))enableSound();render(`<h2 class="sr-only">${byId[kind].name} 実験中</h2><div id="stage" class="stage ${kind}"></div>`,false);stage=createStage(kind,$('#stage'),fn=>{if(phase==='running'&&performance.now()>=controlsAt&&checkClock())fn();},tone,motion());clock=new SessionClock(kind);try{sessionStorage.setItem(RUN_KEY,kind);}catch{}stage.update(0);const abort=button('実験を中断',()=>interrupt('cancel'),'abort');abort.focus({preventScroll:true});panel.scrollIntoView({behavior:'instant',block:'center'});announce(`${byId[kind].name}を開始しました。`);tick();}
+function tick(){timer=setTimeout(()=>{if(checkClock())tick();},40);}
+function checkClock(){if(phase!=='running'||!clock)return false;const s=clock.sample(document.hidden);if(s.status==='interrupted'){interrupt(s.reason);return false;}if(s.status==='complete'){actual=s.elapsedMs/1000;summary=stage.summary();cleanup();estimate();return false;}stage.update(s.elapsedMs);return true;}
+function interrupt(reason){cleanup();if(reason==='hidden'){try{sessionStorage.setItem(RUN_KEY,kind);}catch{}}phase='interrupted';render(`<div class="eyebrow">INTERRUPTED / NOT SAVED</div><h2>時間が途切れました。</h2><p>${reason==='cancel'?'実験を中断しました。':reason==='hidden'?'画面を離れたため、計測を中断しました。':'端末の休止や大きな遅延を検出しました。'}<br>この回は保存・比較に含めません。</p>`);button('もう一度',()=>select(kind,false));announce('実験は中断されました。記録は保存していません。');}
+function estimate(){phase='estimate';render('<div class="eyebrow">AFTER THE MINUTE</div><h2>何秒に感じましたか。</h2><form id="estimate-form" novalidate><label for="estimate">感じた時間（秒）</label><div class="estimate-field"><input id="estimate" type="number" inputmode="decimal" min="0.1" max="3600" step="0.1" required aria-describedby="estimate-error"><span>秒</span></div><p class="fineprint">0.1〜3,600秒。直感で答えてください。</p><p id="estimate-error" class="error" role="alert"></p><button class="primary" type="submit">'+(kind==='memory'?'記憶を確かめる':'結果を見る')+'</button></form>');$('#estimate-form').addEventListener('submit',ev=>{ev.preventDefault();if(phase!=='estimate')return;const value=validEstimate($('#estimate').value);if(value===null){$('#estimate-error').textContent='0.1〜3,600の秒数を入力してください。';$('#estimate').setAttribute('aria-invalid','true');return;}felt=value;if(kind==='memory')recall();else result();});button('記録せず展示へ戻る',()=>select(kind,false),'secondary');announce('60秒が終了しました。感じた秒数を答えてください。');}
+function recall(){phase='recall';render('<div class="eyebrow">MEMORY / AFTER THE INTERVAL</div><h2>何が、残っていますか。</h2><p>見た言葉をすべて選んでください。選択数は自由です。<br>この回答時間は60秒に含めません。</p><div class="recall-grid"></div>');const selected=new Set();for(const word of stage.recallOptions()){const b=document.createElement('button');b.textContent=word;b.setAttribute('aria-pressed','false');b.addEventListener('click',()=>{if(selected.has(word))selected.delete(word);else selected.add(word);b.setAttribute('aria-pressed',String(selected.has(word)));});$('.recall-grid').append(b);}button('記憶と時間の結果を見る',()=>{summary.recall={hits:[...selected].filter(x=>summary.seen.includes(x)).length,falseAlarms:[...selected].filter(x=>!summary.seen.includes(x)).length};result();});button('記録せず戻る',()=>select(kind,false),'secondary');}
+function result(){if(!['estimate','recall'].includes(phase))return;phase='result';const delta=felt-60,scale=Math.max(60,felt);let extra='';if(kind==='count')extra=summary.mark===null?'印：60秒内に未回答。誤差は算出していません。':`印をつけた時刻：${fmt(summary.mark)}秒（60秒との差 ${signed(summary.mark-60)}秒）。実験はその後も60秒まで続きました。`;if(kind==='memory')extra=`見た言葉8個のうち ${summary.recall.hits}個を選択。見ていない言葉の選択 ${summary.recall.falseAlarms}個。`;if(['flow','overload'].includes(kind))extra=`正解 ${summary.score}回。`;if(['choice','repetition','novelty'].includes(kind))extra=`操作 ${summary.score}回。`;if(['rhythm','synchrony'].includes(kind))extra=`タップ ${summary.score}回。${summary.meanError===null?'':`最寄りの拍との平均差 約${summary.meanError}ms（ブラウザ・端末の遅延を含む参考値）。`}`;
+ render(`<div class="eyebrow">SPECIMEN / ${byId[kind].name}</div><h2>あなたの60秒。</h2><div class="stats"><div><b>60</b><small>実時間の目標（秒）</small></div><div><b>${fmt(felt)}</b><small>感じた時間（秒）</small></div></div><div class="comparison" role="img" aria-label="目標60秒と体感${fmt(felt)}秒。差${signed(delta)}秒"><div style="width:${60/scale*100}%"></div><div style="width:${felt/scale*100}%"></div></div><p class="result-delta">${signed(delta)}<span> 秒</span></p><p>${extra}</p><p class="fineprint">実測 ${actual.toFixed(3)}秒。終了描画にはブラウザの遅延が含まれます。<br>これは作品の体験記録です。医学・心理診断、能力判定ではありません。</p>`);
+ const record={version:3,experiment:kind,felt,actual,score:summary.score,at:new Date().toISOString(),mark:summary.mark,recall:summary.recall||null,meanError:summary.meanError};records=[...records,record].slice(-240);const saved=storage&&saveRecords(storage,records);const note=document.createElement('p');note.className='fineprint';note.textContent=saved?'このブラウザに保存しました。':'保存機能を利用できません。このページを開いている間だけ記録します。';panel.append(note);renderHistory();button('もう一度体験する',()=>select(kind,false));button('別の展示を選ぶ',()=>{$('#experiments').scrollIntoView({behavior:motion()?'instant':'smooth'});document.querySelector('[data-exp]').focus({preventScroll:true});},'secondary');announce(`結果を記録しました。60秒との差は${signed(delta)}秒です。`);}
+function renderHistory(){const list=$('#history-list');list.replaceChildren();$('#history-empty').hidden=records.length>0;$('#clear-history').hidden=!records.length;for(const r of records.slice(-24).reverse()){const li=document.createElement('li');li.innerHTML=`<strong>${byId[r.experiment].name}${r.version===2?' / 旧方式':''}</strong><span>${r.version===2&&r.experiment==='count'?`停止 ${fmt(r.actual)}秒（比較対象外）`:`体感 ${fmt(r.felt)}秒 / 差 ${signed(r.felt-60)}秒`}<small>${esc(new Date(r.at).toLocaleString('ja-JP'))}</small></span>`;list.append(li);}$('#compare-grid').innerHTML=compareRecords(records).map(r=>`<div class="compare-row"><b>${byId[r.experiment].name}</b><div class="compare-track"><i class="zero"></i>${r.n?`<i class="felt-marker" style="left:${50+Math.max(-48,Math.min(48,r.mean/60*48))}%"></i>`:''}</div><span>${r.n?`${signed(r.mean)}秒`:'未体験'}<small>${r.n}回</small></span></div>`).join('');}
+$('#clear-history').addEventListener('click',()=>{if(!clearPending){clearPending=true;$('#clear-history').textContent='本当にすべて削除する';return;}records=[];let failed=false;try{storage?.removeItem(STORAGE_KEY);storage?.removeItem('1minutes-results-v2');storage?.removeItem('1minutes-results');}catch{failed=true;}clearPending=false;$('#clear-history').textContent='記録をすべて削除';renderHistory();announce(failed?'ページ内の記録を削除しました。端末保存の削除はブラウザ設定で確認してください。':'記録を削除しました。');});
+$('#clear-history').addEventListener('blur',()=>{clearPending=false;$('#clear-history').textContent='記録をすべて削除';});
+$('#experiments').innerHTML=exhibits.map((e,i)=>`<button class="card" data-exp="${e.id}" style="--accent:${e.color}"><span class="num">${String(i+1).padStart(2,'0')} / ${e.tag}</span><span class="card-icon" aria-hidden="true">${e.icon}</span><h2>${e.name}</h2><p>${e.title}</p><span class="arrow">↗</span></button>`).join('');document.querySelectorAll('[data-exp]').forEach(b=>b.addEventListener('click',()=>select(b.dataset.exp)));
+function renderScience(){if(!research)return;const entries=research.experiments||research.exhibits||[];const refs=research.references||{};$('#science-load').textContent='';$('#science-entries').innerHTML=(Array.isArray(entries)?entries:Object.entries(entries).map(([id,v])=>({id:id.toLowerCase(),...v}))).map(e=>`<details id="science-${e.id}"><summary>${byId[e.id]?.name||esc(e.id)} — 体験の背景</summary><p><b>意図</b><br>${esc(e.intent)}</p><p><b>関連する知見</b><br>${esc(e.evidence)}</p><p><b>この作品での仮説・限界</b><br>${esc(e.hypothesis)}</p><ul>${(e.refs||[]).map(id=>{const ref=Array.isArray(refs)?refs.find(r=>r.id===id):refs[id];return ref?`<li><a href="${esc(ref.url||ref.doiUrl||ref.doi_url||ref.source||'https://doi.org/'+ref.doi)}" target="_blank" rel="noopener noreferrer">${esc(ref.label||ref.citation||ref.title||id)}</a></li>`:'';}).join('')}</ul></details>`).join('');}
+document.addEventListener('click',ev=>{const a=ev.target.closest('a[href^="#science-"]');if(a){const d=document.querySelector(a.getAttribute('href'));if(d)d.open=true;}});
+for(const event of ['pagehide','popstate'])window.addEventListener(event,()=>{if(phase==='running')interrupt('hidden');else stopSound();});document.addEventListener('visibilitychange',()=>{if(document.hidden){if(phase==='running')interrupt('hidden');else stopSound();}});
+renderHistory();if(recovered){render('<div class="eyebrow">INTERRUPTED / RELOAD</div><h2>前の時間は、未完のまま。</h2><p>途中のリロードを検出しました。前の回は記録していません。新しい実験を選んでください。</p>');}

@@ -1,40 +1,35 @@
 # 1minutes — ONE MINUTE FOREVER
 
-A static, mobile-friendly interactive exhibition about subjective time.
+A public interactive exhibition: twelve distinct experiences of one real minute.
 
-## Exhibits
-- WAIT — a silent 60-second interval followed by retrospective estimation.
-- FLOW — a simple attention task over 60 seconds followed by estimation.
-- COUNT — stop the clock when you believe 60 seconds have passed.
+## The twelve rooms
+WAIT (static point), FLOW (attention targets), ANTICIPATION (almost-opening light), COUNT (inner-clock marker), OVERLOAD (dense symbol search), STILLNESS (subtle light field), MEMORY (word sequence and post-interval recognition), CHOICE (successive semantic decisions), REPETITION (accumulating stamps), NOVELTY (changing visual grammars), RHYTHM (steady audiovisual beat), SYNCHRONY (adaptive simulated partner).
 
-## Deployment
-Create a **public** GitHub repository named `1minutes`, upload `index.html`, `app.js`, `core.js`, and `.nojekyll` to its main branch, then enable GitHub Pages in Settings → Pages → Deploy from a branch → main / root.
+All have the same 60,000ms target. A monotonic clock is sampled rather than counting callbacks. The first callback at/after the deadline completes the interval; actual elapsed duration is retained, never fabricated as exactly60. Normal completion may be slightly later because browser scheduling is not a laboratory clock.
 
-## Privacy
-Results are stored locally in the browser via localStorage. No analytics or external services are loaded.
+COUNT does not stop the experiment: it records one estimate marker within the60-second observation window. If no marker occurs, it is explicitly censored (not a zero error or an invented over60 estimate). All twelve ask felt duration after the interval. MEMORY recognition occurs only after that estimate, outside the interval. SYNCHRONY uses an explicitly labeled virtual partner, not real other users.
 
-## Limitations
-This is an artistic demonstration, not a validated psychometric instrument. Switching tabs interrupts the test. Browser scheduling and device conditions can affect timing.
+## Interruption, privacy and accessibility
+Tab hiding, pagehide/navigation, nonmonotonic time, a callback gap over1500ms, or wall/monotonic disagreement over1500ms invalidates the trial without saving. Reloads abandon incomplete trials. Sounds are opt-in, unlocked by user gesture, mutable, stopped on abort/end/hide; rhythm remains visible muted. Reduced-motion CSS and stage behavior, large touch targets, keyboard buttons, status announcements and 320px layouts are supported.
 
-## Measurement and interaction
-- WAIT and FLOW run for a target interval of 60,000 ms, measured using `performance.now()` rather than counting timer callbacks. Results retain the actual measured duration.
-- COUNT measures the moment the participant chooses to stop; it does **not** stop automatically at 60 seconds. A disclosed five-minute limit interrupts the session without saving a result.
-- Hiding the page, a callback gap greater than 1,500 ms, or a wall/monotonic-clock discrepancy greater than 1,500 ms invalidates the session. Browsers are not laboratory timing instruments.
-- Estimates accept 0.1–3,600 seconds. Completed records stay in this browser, with a visible history and a two-step delete control. Blocked storage falls back to page-session memory.
-- WAIT uses a static point, without a rhythmic timing cue. FLOW preserves the initial eight-number attention task. Keyboard, touch, and reduced-motion preferences are supported.
+Results stay in localStorage, no server transmission, no analytics. Storage failure falls back to page memory. V3 retains240 records, shows24 and all12 per-experiment mean felt-duration differences. Existing v2 records remain readable but are excluded from comparisons because original COUNT was variable-duration. Deleting uses two confirmations and removes both versions.
 
-## Development and checks
-No build is needed. Serve this directory over HTTP (for ES modules):
+## Scientific framing
+Every experiment has intent, related evidence, a distinct artistic hypothesis/limitation, and source links in `research.json`. Most references are primary studies; the secondary meta-analysis is labeled in metadata. These are exploratory artworks, not diagnoses or validated psychometric instruments. Known60-second exposure is prospective, not a true retrospective design. Passage-of-time feelings and numerical estimates are different. Subsecond effects are not generalized as established60-second effects.
+
+## Development
+Static ES modules, no build.
 
 ```sh
-python3 -m http.server 4173
 npm ci --ignore-scripts
 npm test
 npx playwright install chromium
 npm run test:browser
 ```
 
-GitHub Actions uses read-only repository permissions for unit tests and desktop/mobile Chromium checks. It includes actual 60-second WAIT/FLOW sessions and a real-time COUNT session beyond 60 seconds, plus controlled-clock boundary, interruption, storage, validation, and narrow-layout cases. Browser review images are retained as CI artifacts, not part of the public site.
+Browser tests cover all12 real60-second full lifecycles on desktop/mobile, plus controlled-clock boundary/interruption/reload/repeat/storage/mute/migration/narrow-layout cases. `TEST_BASE_URL` runs the same suite against a deployed host (use trailing base path). No local user data or external submissions are involved. Screenshots and traces are retained as CI artifacts.
 
-## Initial source
-Based on the original `1minutes.zip` supplied in the planning conversation, with its dark monochrome exhibition design retained. Source ZIP SHA-256: `46c33843e7e08eea71665c6b246d616b93dc0487e970afcae505afbde8c4a183`. The implementation fixes timing and interruption behavior and adds visible local history and accessibility refinements.
+## Deployment
+GitHub Pages serves main/root at https://djnaoyaman.github.io/1minutes/ . Publication must follow passing tests and remote main/deployment verification. The GitHub Actions test workflow has read-only repository permissions.
+
+Initial source was the owner's1minutes.zip; this expansion preserves its monochrome exhibition identity.
