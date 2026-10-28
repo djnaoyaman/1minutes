@@ -2,96 +2,189 @@
   "checkedAt": "2026-10-28",
   "global": {
     "notice": "これは時間知覚を題材にしたインタラクティブ作品です。医学的・心理学的な診断、能力検査、研究結果の再現試験ではありません。感じ方に正解はなく、端末、環境、期待、経験によって変わります。",
-    "method": "すべて60秒だと事前に知って参加するため、ここでの回答は時間への注意や期待の影響を受けます。後から初めて時間を尋ねる研究の『回顧的判断』とは異なります。『何秒に感じたか』と『時間が速く過ぎた感じ』も同じ尺度ではありません。",
+    "method": "全実験で60秒たったと感じた瞬間に自分で止める、時間産出の形式です。終了後の秒数推定や回顧的判断とは異なります。注意、数え方、期待、操作と端末の遅延も結果に影響します。差は停止までの実時間−60秒であり、負は早い停止、正は遅い停止です。",
     "comparison": "比較はこの端末に保存した自分の体験の記録です。実験順や慣れ、ミュート、動きの軽減設定などは統制されていません。実験間の差から原因や性格を判定することはできません。"
   },
   "experiments": {
     "WAIT": {
       "intent": "何もしない余白の中で、待っている自分と時間への注意を観察します。",
       "evidence": "7分30秒の待機を調べた研究では、何もせず待つ人は課題に取り組む人より時間の流れを遅く感じました。一方、秒数の見積もりは各条件とも平均で実時間より短く、『遅く感じる』と『長く見積もる』は一致しませんでした。",
-      "hypothesis": "動きのない60秒が長く感じられるかを探る作品です。同じ結果が全員に起こるとは限りません。",
-      "refs": ["meteier2025"]
+      "hypothesis": "動きのない時間が長く感じられるかを探る作品です。同じ結果が全員に起こるとは限りません。",
+      "refs": [
+        "meteier2025"
+      ]
     },
     "FLOW": {
       "intent": "小さな課題と即時の応答に身を預け、時間から注意が離れる感覚を探ります。",
       "evidence": "25分間のゲーム研究では、強いフロー体験は『時間が速く過ぎた』感覚と関連しました。ただし、時間の流れの速さと、何分だったかの数値的な見積もりは別の指標です。",
-      "hypothesis": "課題への没頭がこの60秒の感じ方を変えるか、という作品独自の問いです。フロー状態への到達や時間の短縮感を保証するものではありません。",
-      "refs": ["rutrecht2021", "brown1997"]
+      "hypothesis": "課題への没頭が自分が60秒と感じるタイミングを変えるか、という作品独自の問いです。フロー状態への到達や時間の短縮感を保証するものではありません。",
+      "refs": [
+        "rutrecht2021",
+        "brown1997"
+      ]
     },
     "ANTICIPATION": {
       "intent": "何かが起こる直前の気配にとどまり、期待して待つ時間を観察します。",
       "evidence": "感覚刺激への反応を調べた研究では、『起こるかどうか』と『いつ起こるか』の不確実さが、それぞれ時間的な予期に影響しました。これは60秒が長く感じられると直接示した結果ではありません。",
       "hypothesis": "結末を予感させる演出が待つ感覚をどう変えるかを探ります。大きな出来事や報酬の到来を約束する体験ではありません。",
-      "refs": ["grabenhorst2021"]
+      "refs": [
+        "grabenhorst2021"
+      ]
     },
     "COUNT": {
-      "intent": "外の時計を頼らず、自分の内側の『60秒』に印をつけます。",
+      "intent": "外の時計を頼らず、自分の内側の60秒で停止します。",
       "evidence": "時間を区切ったり数えたりする方略は、時間を再現する課題の精度やばらつきに影響します。頭の中のカウントも計測条件の一つであり、純粋な『体内時計』だけを測っているわけではありません。",
-      "hypothesis": "60秒の体験中に『いま60秒だ』と思った瞬間を記録します。終了まで印がなければ『未回答』とし、誤差ゼロや60秒を超えた具体的推定値には置き換えません。終了後の体感秒数とは別の記録です。",
-      "refs": ["grondin1992"]
+      "hypothesis": "全実験と同じ時間産出のルールで、ここでは内なる時計に注意を向けます。心の中で数えても構いません。数え方や練習の影響も含む個人の記録であり、能力検査ではありません。",
+      "refs": [
+        "grondin1992"
+      ]
     },
     "OVERLOAD": {
       "intent": "押し寄せる情報の中で、追えたものと取りこぼしたものの差を感じます。",
       "evidence": "時間を測る課題と視覚探索などを同時に行う研究では、他の課題が時間判断を乱しました。研究の統合では、負荷の効果は事前に時間判断を予告するか、後から初めて尋ねるかで異なりました。",
       "hypothesis": "この作品の情報密度と注意の配分が、60秒の体感や記憶にどう現れるかを探ります。刺激が多ければ必ず時間が長くなる、という主張ではありません。",
-      "refs": ["brown1997", "block2010"]
+      "refs": [
+        "brown1997",
+        "block2010"
+      ]
     },
     "STILLNESS": {
       "intent": "ごくわずかな光と影の変化に目を向け、静けさの中にある動きを見つけます。",
-      "evidence": "呼吸へ注意を向ける瞑想後、短い刺激の長さの判断が変わった実験があります。ただし、静かな映像を見ることと瞑想は同一ではなく、この60秒の演出にその結果をそのまま当てはめることはできません。",
+      "evidence": "呼吸へ注意を向ける瞑想後、短い刺激の長さの判断が変わった実験があります。ただし、静かな映像を見ることと瞑想は同一ではなく、この作品の演出にその結果をそのまま当てはめることはできません。",
       "hypothesis": "小さな変化に注意を向けることが時間の感じ方を変えるかを探る作品です。リラックスや健康への効果を測定・保証するものではありません。",
-      "refs": ["kramer2013"]
+      "refs": [
+        "kramer2013"
+      ]
     },
     "MEMORY": {
       "intent": "通り過ぎた出来事を思い出し、体験した時間と記憶に残った時間を並べます。",
       "evidence": "出来事の境目は順序の記憶を形づくります。実験では、同じ出来事の中の順序は覚えやすくなる一方、境目をまたぐ順序は覚えにくくなる場合がありました。",
-      "hypothesis": "覚えていた出来事と体感秒数を一緒に振り返ります。この短い体験の正答数は一般的な記憶力や認知機能の診断ではありません。",
-      "refs": ["pu2022"]
+      "hypothesis": "覚えていた出来事と停止までの実時間を一緒に振り返ります。この短い体験の正答数は一般的な記憶力や認知機能の診断ではありません。",
+      "refs": [
+        "pu2022"
+      ]
     },
     "CHOICE": {
       "intent": "選び続けることで、一分の中にいくつもの分かれ道をつくります。",
       "evidence": "切り替え、更新、抑制などの課題と時間を測る課題を同時に行う研究では、注意の配分に応じて互いの成績が変わりました。意思決定一般が時間を一方向に伸ばすと示した研究ではありません。",
       "hypothesis": "連続する選択が、自分にとって忙しさになるのか、迷いになるのか、時間の忘却になるのかを探ります。選択内容から性格を推定しません。",
-      "refs": ["brown2013"]
+      "refs": [
+        "brown2013"
+      ]
     },
     "REPETITION": {
       "intent": "同じ行為を何度も繰り返し、変わらないことの中に生まれる感覚を見ます。",
       "evidence": "短い視覚刺激の研究では、反復された刺激は新しい刺激より短く知覚されました。しかしこれは主に1秒未満の刺激の知見で、単調な行為を続ける60秒全体が短く感じられる証明ではありません。",
       "hypothesis": "反復が退屈にも落ち着きにもなり得ることを、この作品で探ります。繰り返す回数の多さを能力の高さとみなしません。",
-      "refs": ["cai2015"]
+      "refs": [
+        "cai2015"
+      ]
     },
     "NOVELTY": {
       "intent": "予測の外から現れる変化に触れ、初めて見る瞬間の密度を探ります。",
       "evidence": "同じ刺激が続く中に珍しい刺激が入ると、物理的な表示時間が等しくても、その刺激が長く感じられる実験があります。対象は短い刺激であり、世界全体の時間が遅くなるという意味ではありません。",
-      "hypothesis": "次々と違う演出に出会う60秒がどんな長さになるかは、この作品独自の問いです。新奇さと刺激量の効果を厳密に切り分けた実験ではありません。",
-      "refs": ["tse2004", "cai2015"]
+      "hypothesis": "次々と違う演出の中で、いつ60秒と感じて止めるかは、この作品独自の問いです。新奇さと刺激量の効果を厳密に切り分けた実験ではありません。",
+      "refs": [
+        "tse2004",
+        "cai2015"
+      ]
     },
     "RHYTHM": {
       "intent": "音や光の拍に触れ、時計の数字ではなく身体で時間を受け取ります。",
       "evidence": "規則的な音列の後では、予想されるタイミングに現れた音の高さを判断しやすくなる実験があります。リズムが注意を向ける時点を形づくることを示唆しますが、60秒の長さの判断が一定方向へ変わる証明ではありません。",
       "hypothesis": "拍とのずれと体感時間を並べて観察します。タップのずれには端末や音声出力の遅延も含まれ、音楽能力を採点するものではありません。",
-      "refs": ["jones2002"]
+      "refs": [
+        "jones2002"
+      ]
     },
     "SYNCHRONY": {
       "intent": "自分だけでは決められない拍に寄り添い、『合わせる』時間を体験します。",
       "evidence": "参加者のタップに反応する仮想の相手を使った研究では、相手の適応の程度によって同期のしかたや主観的な同期感が変わりました。実際の他者との交流そのものを再現するものではありません。",
       "hypothesis": "この作品の相手はプログラムです。相手に合わせ、相手もこちらへ近づく感覚を探ります。人間との相性、共感性、社会性を測る体験ではありません。",
-      "refs": ["fairhurst2013"]
+      "refs": [
+        "fairhurst2013"
+      ]
     }
   },
   "references": {
-    "meteier2025": {"label":"Meteier et al. (2025). Effect of task nature during short digital deprivation on time perception and psychophysiological state.","url":"https://doi.org/10.1038/s41598-025-94316-3","verifiedVia":"https://pmc.ncbi.nlm.nih.gov/articles/PMC11947215/","type":"primary"},
-    "rutrecht2021": {"label":"Rutrecht, Wittmann, Khoshnoud & Alvarez Igarzábal (2021). Time Speeds Up During Flow States: A Study in Virtual Reality with the Video Game Thumper.","url":"https://doi.org/10.1163/22134468-bja10033","verifiedVia":"https://brill.com/downloadpdf/view/journals/time/9/4/article-p353_353.pdf","type":"primary","accessNote":"Publisher indexed text read; direct PDF open returned403, not retried."},
-    "brown1997": {"label":"Brown (1997). Attentional resources in timing: Interference effects in concurrent temporal and nontemporal working memory tasks.","url":"https://doi.org/10.3758/BF03205526","verifiedVia":"https://pubmed.ncbi.nlm.nih.gov/9360484/","type":"primary"},
-    "block2010": {"label":"Block, Hancock & Zakay (2010). How cognitive load affects duration judgments: A meta-analytic review.","url":"https://doi.org/10.1016/j.actpsy.2010.03.006","verifiedVia":"https://www.sciencedirect.com/science/article/pii/S0001691810000594","type":"meta-analysis"},
-    "grabenhorst2021": {"label":"Grabenhorst, Maloney, Poeppel & Michalareas (2021). Two sources of uncertainty independently modulate temporal expectancy.","url":"https://doi.org/10.1073/pnas.2019342118","verifiedVia":"https://pmc.ncbi.nlm.nih.gov/articles/PMC8072397/","type":"primary"},
-    "grondin1992": {"label":"Grondin (1992). Production of time intervals from segmented and nonsegmented inputs.","url":"https://doi.org/10.3758/BF03209151","verifiedVia":"https://pubmed.ncbi.nlm.nih.gov/1408645/","type":"primary"},
-    "kramer2013": {"label":"Kramer, Weger & Sharma (2013). The effect of mindfulness meditation on time perception.","url":"https://doi.org/10.1016/j.concog.2013.05.008","verifiedVia":"https://pubmed.ncbi.nlm.nih.gov/23778017/","type":"primary"},
-    "pu2022": {"label":"Pu, Kong, Ranganath & Melloni (2022). Event boundaries shape temporal organization of memory by resetting temporal context.","url":"https://doi.org/10.1038/s41467-022-28216-9","verifiedVia":"https://pmc.ncbi.nlm.nih.gov/articles/PMC8810807/","type":"primary"},
-    "brown2013": {"label":"Brown, Collier & Night (2013). Timing and executive resources: Dual-task interference patterns between temporal production and shifting, updating, and inhibition tasks.","url":"https://doi.org/10.1037/a0030484","verifiedVia":"https://pubmed.ncbi.nlm.nih.gov/23127475/","type":"primary"},
-    "cai2015": {"label":"Cai, Eagleman & Ma (2015). Perceived duration is reduced by repetition but not by high-level expectation.","url":"https://doi.org/10.1167/15.13.19","verifiedVia":"https://pubmed.ncbi.nlm.nih.gov/26401626/","type":"primary"},
-    "tse2004": {"label":"Tse, Intriligator, Rivest & Cavanagh (2004). Attention and the subjective expansion of time.","url":"https://doi.org/10.3758/BF03196844","verifiedVia":"https://cavlab.net/MyRWResources/MyPDFs/PDF2004/Tseetal2004.pdf","type":"primary"},
-    "jones2002": {"label":"Jones, Moynihan, MacKenzie & Puente (2002). Temporal aspects of stimulus-driven attending in dynamic arrays.","url":"https://doi.org/10.1111/1467-9280.00458","verifiedVia":"https://pubmed.ncbi.nlm.nih.gov/12137133/","type":"primary"},
-    "fairhurst2013": {"label":"Fairhurst, Janata & Keller (2013). Being and Feeling in Sync with an Adaptive Virtual Partner: Brain Mechanisms Underlying Dynamic Cooperativity.","url":"https://doi.org/10.1093/cercor/bhs243","verifiedVia":"https://academic.oup.com/cercor/article-pdf/23/11/2592/14097201/bhs243.pdf","type":"primary"}
+    "meteier2025": {
+      "label": "Meteier et al. (2025). Effect of task nature during short digital deprivation on time perception and psychophysiological state.",
+      "url": "https://doi.org/10.1038/s41598-025-94316-3",
+      "verifiedVia": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11947215/",
+      "type": "primary"
+    },
+    "rutrecht2021": {
+      "label": "Rutrecht, Wittmann, Khoshnoud & Alvarez Igarzábal (2021). Time Speeds Up During Flow States: A Study in Virtual Reality with the Video Game Thumper.",
+      "url": "https://doi.org/10.1163/22134468-bja10033",
+      "verifiedVia": "https://brill.com/downloadpdf/view/journals/time/9/4/article-p353_353.pdf",
+      "type": "primary",
+      "accessNote": "Publisher indexed text read; direct PDF open returned403, not retried."
+    },
+    "brown1997": {
+      "label": "Brown (1997). Attentional resources in timing: Interference effects in concurrent temporal and nontemporal working memory tasks.",
+      "url": "https://doi.org/10.3758/BF03205526",
+      "verifiedVia": "https://pubmed.ncbi.nlm.nih.gov/9360484/",
+      "type": "primary"
+    },
+    "block2010": {
+      "label": "Block, Hancock & Zakay (2010). How cognitive load affects duration judgments: A meta-analytic review.",
+      "url": "https://doi.org/10.1016/j.actpsy.2010.03.006",
+      "verifiedVia": "https://www.sciencedirect.com/science/article/pii/S0001691810000594",
+      "type": "meta-analysis"
+    },
+    "grabenhorst2021": {
+      "label": "Grabenhorst, Maloney, Poeppel & Michalareas (2021). Two sources of uncertainty independently modulate temporal expectancy.",
+      "url": "https://doi.org/10.1073/pnas.2019342118",
+      "verifiedVia": "https://pmc.ncbi.nlm.nih.gov/articles/PMC8072397/",
+      "type": "primary"
+    },
+    "grondin1992": {
+      "label": "Grondin (1992). Production of time intervals from segmented and nonsegmented inputs.",
+      "url": "https://doi.org/10.3758/BF03209151",
+      "verifiedVia": "https://pubmed.ncbi.nlm.nih.gov/1408645/",
+      "type": "primary"
+    },
+    "kramer2013": {
+      "label": "Kramer, Weger & Sharma (2013). The effect of mindfulness meditation on time perception.",
+      "url": "https://doi.org/10.1016/j.concog.2013.05.008",
+      "verifiedVia": "https://pubmed.ncbi.nlm.nih.gov/23778017/",
+      "type": "primary"
+    },
+    "pu2022": {
+      "label": "Pu, Kong, Ranganath & Melloni (2022). Event boundaries shape temporal organization of memory by resetting temporal context.",
+      "url": "https://doi.org/10.1038/s41467-022-28216-9",
+      "verifiedVia": "https://pmc.ncbi.nlm.nih.gov/articles/PMC8810807/",
+      "type": "primary"
+    },
+    "brown2013": {
+      "label": "Brown, Collier & Night (2013). Timing and executive resources: Dual-task interference patterns between temporal production and shifting, updating, and inhibition tasks.",
+      "url": "https://doi.org/10.1037/a0030484",
+      "verifiedVia": "https://pubmed.ncbi.nlm.nih.gov/23127475/",
+      "type": "primary"
+    },
+    "cai2015": {
+      "label": "Cai, Eagleman & Ma (2015). Perceived duration is reduced by repetition but not by high-level expectation.",
+      "url": "https://doi.org/10.1167/15.13.19",
+      "verifiedVia": "https://pubmed.ncbi.nlm.nih.gov/26401626/",
+      "type": "primary"
+    },
+    "tse2004": {
+      "label": "Tse, Intriligator, Rivest & Cavanagh (2004). Attention and the subjective expansion of time.",
+      "url": "https://doi.org/10.3758/BF03196844",
+      "verifiedVia": "https://cavlab.net/MyRWResources/MyPDFs/PDF2004/Tseetal2004.pdf",
+      "type": "primary"
+    },
+    "jones2002": {
+      "label": "Jones, Moynihan, MacKenzie & Puente (2002). Temporal aspects of stimulus-driven attending in dynamic arrays.",
+      "url": "https://doi.org/10.1111/1467-9280.00458",
+      "verifiedVia": "https://pubmed.ncbi.nlm.nih.gov/12137133/",
+      "type": "primary"
+    },
+    "fairhurst2013": {
+      "label": "Fairhurst, Janata & Keller (2013). Being and Feeling in Sync with an Adaptive Virtual Partner: Brain Mechanisms Underlying Dynamic Cooperativity.",
+      "url": "https://doi.org/10.1093/cercor/bhs243",
+      "verifiedVia": "https://academic.oup.com/cercor/article-pdf/23/11/2592/14097201/bhs243.pdf",
+      "type": "primary"
+    }
   }
 }
