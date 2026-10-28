@@ -26,6 +26,7 @@ test('layout and keyboard: original exhibition, no horizontal overflow', async (
 });
 for (const kind of ['wait', 'flow']) test(`${kind}: 60s, estimate validation, result, history, retry`, async ({ page }, testInfo) => {
   await virtual(page); await choose(page, kind);
+  if (kind === 'wait') await page.screenshot({path: testInfo.outputPath('wait-running.png')});
   if (kind === 'flow') {
     await page.locator('.tile.active').click(); await expect(page.locator('#score')).toHaveText('1');
     await page.screenshot({ path: testInfo.outputPath('flow.png') });
@@ -53,13 +54,15 @@ for (const kind of ['wait', 'flow']) test(`${kind}: 60s, estimate validation, re
   await page.locator('#clear-history').click(); await page.locator('#clear-history').click();
   await expect(page.locator('#history-list li')).toHaveCount(0);
 });
-test('COUNT: may exceed 60s, stop only once, saved with actual/target', async ({ page }) => {
+test('COUNT: may exceed 60s, stop only once, saved with actual/target', async ({ page }, testInfo) => {
   await virtual(page); await choose(page, 'count'); await page.clock.runFor(72500);
   await expect(page.locator('#stop-count')).toBeVisible();
+  await page.screenshot({path: testInfo.outputPath('count-running.png')});
   await page.locator('#stop-count').click();
   await expect(page.locator('.result-delta')).toContainText('+12.5');
   await expect(page.locator('#history-list li')).toHaveCount(1);
   await expect(page.locator('#history-list')).toContainText('停止 72.5秒');
+  await page.screenshot({path: testInfo.outputPath('count-result.png'), fullPage: true});
 });
 test('interrupted hidden page, long stall and maximum COUNT do not save', async ({ page }) => {
   await virtual(page); await choose(page, 'wait');
