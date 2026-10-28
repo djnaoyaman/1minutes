@@ -8,3 +8,5 @@
 @media(max-width:700px){.archive-grid{grid-template-columns:repeat(5,1fr)}}
 @media(max-width:370px){.duet{gap:16px}}
 .count-orbit{max-width:100%}.pulse-pad{max-width:100%;aspect-ratio:1;height:auto;flex-shrink:0}
+
+.experiment-running .stop-button{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:12;margin:0;width:min(360px,calc(100% - 32px));min-height:56px;background:#eee9df;color:#151515;box-shadow:0 4px 24px #0009}.experiment-running .panel{padding-bottom:110px}.count .stage-label{position:relative;margin-top:100px}

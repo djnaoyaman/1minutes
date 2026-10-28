@@ -1,8 +1,8 @@
 import {nextTarget,shuffle} from './core.js';
 const words=['灯台','鍵','羽根','窓','雨','貝殻','椅子','月','切符','森','舟','糸','靴','砂','鏡','雲'];
 export function createStage(kind,root,act,tone,reduced){
- let score=0,elapsed=0,marked=null,beat=-1,target=0,round=-1,partner=0,nextPartner=800,lastPartner=0,period=900,lastTap=null;
- const errors=[],seen=shuffle(words).slice(0,8); let scene=0,variantIndex=-1,seed=Math.random()*100;
+ let score=0,elapsed=0,beat=-1,target=0,round=-1,partner=0,nextPartner=800,lastPartner=0,period=900,lastTap=null;
+ const errors=[],sequence=shuffle(words).slice(0,8),seen=new Set(); let scene=0,variantIndex=-1,seed=Math.random()*100;
  const set=html=>root.innerHTML=html;
  const bind=(selector,fn)=>root.querySelectorAll(selector).forEach(el=>el.addEventListener('click',()=>act(()=>fn(el))));
  if(kind==='wait')set('<div class="waiting-point" aria-label="静止した白い点"></div>');
@@ -12,7 +12,7 @@ export function createStage(kind,root,act,tone,reduced){
   bind('[data-n]',el=>{if(Number(el.dataset.n)!==target)return;score++;target=nextTarget(target);paint();});
  }
  if(kind==='anticipation'){set('<button class="door" aria-label="予感の扉に触れる"><span></span></button><p class="stage-label">ALMOST.</p>');bind('.door',()=>{score++;root.querySelector('.door').classList.toggle('touched');});}
- if(kind==='count'){set('<div class="count-orbit" aria-hidden="true"></div><button class="mark-button">60秒だと思った印をつける</button><p class="stage-label" id="mark-status">時計は、あなたの中に。</p>');bind('.mark-button',el=>{if(marked!==null)return;marked=elapsed/1000;score=1;el.disabled=true;el.textContent='印をつけました';root.querySelector('#mark-status').textContent='終了まで、そのまま。';});}
+ if(kind==='count')set('<div class="count-orbit" aria-hidden="true"></div><p class="stage-label">時計は、あなたの中に。<br>心の中で、数えても。</p>');
  if(kind==='overload'){set('<div class="stage-label">FIND ◎ IN THE ARCHIVE</div><div class="archive-grid"></div>');}
  if(kind==='stillness'){set('<div class="light-field" role="img" aria-label="ゆっくり移ろう光と影"><div></div></div><span class="stage-label">MOVE LIGHT, GENTLY</span>');const field=root.querySelector('.light-field');field.addEventListener('pointermove',ev=>{const r=field.getBoundingClientRect();field.style.setProperty('--x',`${Math.min(90,Math.max(10,(ev.clientX-r.left)/r.width*100))}%`);});}
  if(kind==='memory')set('<div class="memory-frame"><span class="memory-symbol" aria-hidden="true">◇</span><strong class="memory-word"></strong></div><p class="stage-label">LET IT LEAVE A TRACE</p>');
@@ -27,12 +27,12 @@ export function createStage(kind,root,act,tone,reduced){
   if(kind==='anticipation'){const amount=.2+.2*Math.sin(ms/4800)+.1*Math.sin(ms/1100);root.querySelector('.door').style.setProperty('--glow',amount);}
   if(kind==='stillness'){const field=root.querySelector('.light-field');field.style.setProperty('--light',`${32+Math.sin(ms/19000)*6}%`);if(!reduced)field.style.setProperty('--drift',`${Math.sin(ms/17000)*9}px`);}
   if(kind==='overload'&&Math.floor(ms/4200)!==round){round=Math.floor(ms/4200);target=Math.floor(Math.random()*30);const grid=root.querySelector('.archive-grid');grid.innerHTML=Array.from({length:30},(_,i)=>`<button data-cell="${i}" aria-label="${i===target?'◎':`記号 ${i+1}`}"><small>${String((round*31+i*17)%997).padStart(3,'0')}</small><b>${i===target?'◎':['△','□','◇','＋','○','∴'][Math.floor(Math.random()*6)]}</b></button>`).join('');bind('[data-cell]',el=>{if(Number(el.dataset.cell)===target&&!el.disabled){score++;el.disabled=true;el.classList.add('found');}});}
-  if(kind==='memory'){const i=Math.min(7,Math.floor(ms/7500));if(i!==round){round=i;root.querySelector('.memory-word').textContent=seen[i];root.querySelector('.memory-symbol').textContent=['◇','⌁','◯','△','⋮','□','⊙','∿'][i];}}
+  if(kind==='memory'){const i=Math.floor(ms/7500)%sequence.length;if(i!==round){round=i;seen.add(sequence[i]);root.querySelector('.memory-word').textContent=sequence[i];root.querySelector('.memory-symbol').textContent=['◇','⌁','◯','△','⋮','□','⊙','∿'][i];}}
   if(kind==='novelty'&&Math.floor(ms/(5100+seed*10))!==round){round=Math.floor(ms/(5100+seed*10));if(ms>100)novelty();}
   if(kind==='rhythm'){const b=Math.floor(ms/750);if(b!==beat){beat=b;tone(330,.06);}root.querySelector('.pulse-pad').style.setProperty('--pulse',Math.max(0,1-(ms%750)/320));}
   if(kind==='synchrony'){if(ms>=nextPartner){lastPartner=nextPartner;nextPartner+=period;partner++;tone(220,.08);}root.querySelector('.partner-disc').style.setProperty('--pulse',Math.max(0,1-(ms-lastPartner)/360));}
  },
- summary(){return {score,mark:marked,seen:kind==='memory'?seen:[],meanError:errors.length?Math.round(errors.reduce((a,b)=>a+b,0)/errors.length):null,partnerBeats:partner};},
+ summary(){return {score,seen:kind==='memory'?[...seen]:[],meanError:errors.length?Math.round(errors.reduce((a,b)=>a+b,0)/errors.length):null,partnerBeats:partner};},
  recallOptions:()=>shuffle(words)
  };
 }
