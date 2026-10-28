@@ -16,6 +16,7 @@ let actual = 0;
 let score = 0;
 let target = 0;
 let clearPending = false;
+let controlsReadyAt = 0;
 const names = { wait: 'WAIT', flow: 'FLOW', count: 'COUNT' };
 const descriptions = {
   wait: '何もせず、白い点を見つめてください。時計は表示されません。60秒後、感じた長さを答えます。',
@@ -42,7 +43,15 @@ function render(markup, focus = true) {
 function button(label, action, className = 'primary') {
   const element = document.createElement('button');
   element.type = 'button'; element.className = className; element.textContent = label;
-  element.addEventListener('click', action);
+  // A second tap must not activate a different control inserted at the same position.
+  element.addEventListener('click', event => {
+    if (event.detail > 1) return;
+    // Touch browsers can report each tap as detail=1. Briefly shield newly
+    // inserted run controls from the tap that started the experiment.
+    // Keyboard activation (detail=0) remains immediately available.
+    if (phase === 'running' && event.detail > 0 && performance.now() < controlsReadyAt) return;
+    action(event);
+  });
   panel.appendChild(element);
   return element;
 }
@@ -56,6 +65,7 @@ function select(kind, scroll = true) {
 function begin() {
   if (phase !== 'ready' || document.hidden) return;
   phase = 'running'; score = 0;
+  controlsReadyAt = performance.now() + 400;
   cards.forEach(card => { card.disabled = true; });
   document.body.classList.add('experiment-running');
   if (experiment === 'wait') {
