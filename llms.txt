@@ -1,0 +1,9 @@
+# 1minutes — ONE MINUTE FOREVER
+
+> 時間知覚を題材にした、12の独立したインタラクティブ作品。
+
+- [作品を開く](https://djnaoyaman.github.io/1minutes/)
+- [詳しい案内](https://djnaoyaman.github.io/1minutes/llms-full.txt)
+- [意図・知見・参考文献](https://djnaoyaman.github.io/1minutes/research.json)
+
+全作品で、60秒たったと感じた瞬間に自分で止めます。実時間60秒で自動終了する形式ではありません。記録はこのブラウザ内のみ。診断、能力判定、研究結果の再現検査ではありません。

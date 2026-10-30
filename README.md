@@ -33,3 +33,6 @@ Browser tests cover all12 real beyond60-second user-stop full lifecycles and all
 GitHub Pages serves main/root at https://djnaoyaman.github.io/1minutes/ . Publication must follow passing tests and remote main/deployment verification. The GitHub Actions test workflow has read-only repository permissions.
 
 Initial source was the owner's1minutes.zip; this expansion preserves its monochrome exhibition identity.
+
+## Launch Package foundation
+Canonical, sharing metadata and JSON-LD describe the existing twelve user-stopped experiences. Sitemap indexes only the public exhibition, not private local results or the404 page. `robots.txt` inside this project is informational: crawler rules belong to the host-root robots.txt, which this change does not modify. Icons reuse the existing monochrome1. mark, with opaque Apple/Android artwork and separate maskable safe-area variants. No GA, advertising, service worker or experiment logic is added. `llms.txt` is a supplementary guide, not an indexing guarantee.
