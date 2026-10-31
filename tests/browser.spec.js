@@ -72,6 +72,8 @@ for (const width of [320, 390, 768, 1280]) {
   await expect(page.locator('.science-link svg')).toHaveCount(1);
   await page.getByRole('button', {name:'実験をはじめる', exact:true}).click();
   await expect(page.locator('#stop-trial')).toBeVisible();
+  // Respect the intentional 450ms start/double-tap guard before a real cancel.
+  await page.waitForTimeout(550);
   await page.getByRole('button', {name:'実験を中断', exact:true}).click();
   await expect(page.getByRole('heading', {name:'時間が途切れました。'})).toBeVisible();
  });
