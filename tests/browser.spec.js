@@ -31,6 +31,12 @@ for (const width of [320, 390, 768, 1280]) {
   await page.setViewportSize({width, height: 900});
   await page.emulateMedia({reducedMotion: 'reduce'});
   await page.goto('./');
+  await expect(page.locator('.brand img')).toBeVisible();
+  await expect(page.locator('.brand')).toHaveAttribute('aria-label','1minutes ホーム');
+  await expect.poll(() => page.locator('.brand img').evaluate(i => i.complete && i.naturalWidth > 0)).toBeTruthy();
+  const brandBox = await page.locator('.brand').boundingBox();
+  expect(brandBox.x).toBeGreaterThanOrEqual(0);
+  expect(brandBox.x + brandBox.width).toBeLessThanOrEqual(width);
   await expect(page.locator('.card-icon svg')).toHaveCount(12);
   await expect(page.locator('.card .arrow svg')).toHaveCount(12);
   await expect(page.getByRole('heading', {name: '60秒は、長いか。', exact: true})).toBeVisible();

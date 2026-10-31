@@ -15,19 +15,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-      - run: npm ci --ignore-scripts
-      - run: npx playwright install --with-deps chromium
-      - name: Wait for this checkout on GitHub Pages
-        run: node scripts/wait-public.mjs
-      - run: npm run test:browser
-        env:
-          TEST_BASE_URL: https://djnaoyaman.github.io/1minutes/
+      - name: Verify exact published assets, serially at least 65 seconds apart
+        shell: bash
+        run: node scripts/wait-public.mjs | tee public-verification.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: public-browser-review
-          path: |
-            playwright-report/
-            test-results/
+          name: public-asset-verification
+          path: public-verification.log
           retention-days: 7

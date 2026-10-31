@@ -22,3 +22,9 @@
 .hero h1 .hero-number{letter-spacing:-.055em;color:inherit;margin-right:.045em}
 .hero h1 .hero-muted{color:#777}
 @media(max-width:700px){.hero{padding:56px 0 64px}.hero h1{font-size:clamp(58px,14.5vw,100px);line-height:1.28;margin-bottom:30px}.hero .eyebrow{letter-spacing:.13em;margin-bottom:24px}}
+
+/* Approved 05 CONTINUOUS symbol + Liberation Sans minute, as outlined artwork. */
+.brand{display:inline-flex;flex:none;line-height:1;letter-spacing:normal}
+.brand img{display:block;width:132px;height:auto}
+.footer-brand{display:block;width:112px;height:auto;margin:0 auto 24px}
+@media(max-width:700px){.brand img{width:112px}header{padding-top:16px;padding-bottom:16px}}
