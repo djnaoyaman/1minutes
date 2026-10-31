@@ -25,3 +25,56 @@ test('all12 cards and reference typography narrow layout',async({page},info)=>{a
 
 test('audio starts only after explicit opt-in and cleans every voice',async({page})=>{await page.addInitScript(()=>{window.audioAudit={created:0,started:0,active:0};class A{constructor(){window.audioAudit.created++;this.state='suspended';this.currentTime=0;this.destination={};}resume(){this.state='running';return Promise.resolve();}createGain(){return{gain:{setValueAtTime(){},linearRampToValueAtTime(){},exponentialRampToValueAtTime(){}},connect(){},disconnect(){}};}createOscillator(){let active=false;return{frequency:{value:0},connect(){},disconnect(){},start(){active=true;window.audioAudit.started++;window.audioAudit.active++;},stop(at){if(at!==undefined)return;if(active){active=false;window.audioAudit.active--;}this.onended?.();}};}}window.AudioContext=A;});await page.clock.install();await page.goto('./');await select(page,'rhythm');await page.clock.runFor(2000);expect(await page.evaluate(()=>window.audioAudit.started)).toBe(0);await page.locator('#mute').click();await page.clock.runFor(1000);expect(await page.evaluate(()=>window.audioAudit.started)).toBeGreaterThan(0);expect(await page.evaluate(()=>window.audioAudit.active)).toBeGreaterThan(0);await page.locator('#mute').click();const starts=await page.evaluate(()=>window.audioAudit.started);await page.clock.runFor(2000);expect(await page.evaluate(()=>window.audioAudit.started)).toBe(starts);expect(await page.evaluate(()=>window.audioAudit.active)).toBe(0);await page.locator('#mute').click();await page.clock.runFor(1000);expect(await page.evaluate(()=>window.audioAudit.active)).toBeGreaterThan(0);await page.getByRole('button',{name:'実験を中断',exact:true}).click();expect(await page.evaluate(()=>window.audioAudit.active)).toBe(0);await select(page,'synchrony');await page.clock.runFor(2000);expect(await page.evaluate(()=>window.audioAudit.active)).toBeGreaterThan(0);await finish(page,'synchrony');expect(await page.evaluate(()=>window.audioAudit.active)).toBe(0);});
 test('320px running stages fit and start-doubletap cannot stop prematurely',async({page},info)=>{await page.setViewportSize({width:320,height:750});await page.clock.install();await page.goto('./');for(const kind of kinds){await page.locator(`[data-exp="${kind}"]`).click();await page.getByRole('button',{name:'実験をはじめる',exact:true}).click();await page.locator('#stop-trial').dispatchEvent('click',{detail:1});await expect(page.locator('#stage')).toBeVisible();await page.clock.runFor(600);await expect(page.locator('#stop-trial')).toBeInViewport();const box=await page.locator('#stage').boundingBox();const stageOverflow=await page.locator('#stage').evaluate(e=>e.scrollWidth>e.clientWidth);expect(stageOverflow,kind).toBeFalsy();expect(box.width).toBeGreaterThan(200);await page.screenshot({path:info.outputPath(`${kind}-320-running.png`)});await page.getByRole('button',{name:'実験を中断',exact:true}).click();}});
+
+for (const width of [320, 390, 768, 1280]) {
+ test(`exhibition identity stays geometric and hero stays readable at ${width}px`, async ({page}, info) => {
+  await page.setViewportSize({width, height: 900});
+  await page.emulateMedia({reducedMotion: 'reduce'});
+  await page.goto('./');
+  await expect(page.locator('.brand img')).toBeVisible();
+  await expect(page.locator('.brand')).toHaveAttribute('aria-label','1minutes ホーム');
+  await expect.poll(() => page.locator('.brand img').evaluate(i => i.complete && i.naturalWidth > 0)).toBeTruthy();
+  const brandBox = await page.locator('.brand').boundingBox();
+  expect(brandBox.x).toBeGreaterThanOrEqual(0);
+  expect(brandBox.x + brandBox.width).toBeLessThanOrEqual(width);
+  await expect(page.locator('.card-icon svg')).toHaveCount(12);
+  await expect(page.locator('.card .arrow svg')).toHaveCount(12);
+  await expect(page.getByRole('heading', {name: '60秒は、長いか。', exact: true})).toBeVisible();
+  await expect(page.locator('.hero-line')).toHaveText(['60秒は、', '長いか。']);
+  const layout = await page.evaluate(() => {
+   const lines = [...document.querySelectorAll('.hero-line')];
+   return {
+    fits: document.documentElement.scrollWidth <= innerWidth,
+    rows: lines.map(el => {
+     const r = el.getBoundingClientRect(); const s = getComputedStyle(el);
+     const range = document.createRange(); range.selectNodeContents(el);
+     const text = range.getBoundingClientRect();
+     return {top:r.top, bottom:r.bottom, left:text.left, right:text.right, width:r.width,
+      scroll:el.scrollWidth, spacing:s.letterSpacing, nowrap:s.whiteSpace,
+      lineRatio:parseFloat(s.lineHeight)/parseFloat(s.fontSize)};
+    }),
+    icons: [...document.querySelectorAll('.card-icon')].every(el => el.textContent.trim() === ''),
+    svgHidden: [...document.querySelectorAll('.card-icon svg')].every(el => el.getAttribute('aria-hidden') === 'true' && el.getAttribute('focusable') === 'false')
+   };
+  });
+  expect(layout.fits).toBeTruthy(); expect(layout.icons).toBeTruthy(); expect(layout.svgHidden).toBeTruthy();
+  expect(layout.rows[1].top).toBeGreaterThanOrEqual(layout.rows[0].bottom - 1);
+  for (const row of layout.rows) {
+   expect(['normal', '0px']).toContain(row.spacing);
+   expect(row.nowrap).toBe('nowrap'); expect(row.lineRatio).toBeGreaterThanOrEqual(1.2);
+   expect(row.scroll).toBeLessThanOrEqual(Math.ceil(row.width) + 1);
+   expect(row.left).toBeGreaterThanOrEqual(0); expect(row.right).toBeLessThanOrEqual(width);
+  }
+  await page.screenshot({path: info.outputPath(`hero-${width}.png`)});
+  await page.locator('#experiments').scrollIntoViewIfNeeded();
+  await page.screenshot({path: info.outputPath(`geometric-icons-${width}.png`)});
+  await page.locator('[data-exp="novelty"]').click();
+  await expect(page.locator('.science-link svg')).toHaveCount(1);
+  await page.getByRole('button', {name:'実験をはじめる', exact:true}).click();
+  await expect(page.locator('#stop-trial')).toBeVisible();
+  // Respect the intentional 450ms start/double-tap guard before a real cancel.
+  await page.waitForTimeout(550);
+  await page.getByRole('button', {name:'実験を中断', exact:true}).click();
+  await expect(page.getByRole('heading', {name:'時間が途切れました。'})).toBeVisible();
+ });
+}
