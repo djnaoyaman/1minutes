@@ -43,3 +43,12 @@ The owner selected the CONTINUOUS 1 symbol and font option 03 (Liberation Sans R
 Exhibition-card symbols and arrows are SVG geometry rather than Unicode pictographs, so mobile emoji fonts cannot replace them. Hero lines retain the wording but use separate Japanese spacing and explicit two-line layout. Measurement, twelve experiments and stored results are unchanged.
 
 Public verification logs every request timestamp, stops without retry on 401/403, and fails if the deployment does not match within a bounded 20-minute / 18-request window. Deployment publication is coordinated with the shared public-request window; localhost tests do not consume it. The public check covers the seven experiment runtime/data files plus icons.js, approved header artwork, favicon SVG, OG PNG, and Apple touch icon.
+
+
+## Visible site update date
+
+The footer's **サイト最終更新** is the actual published-source revision date in Japan Standard Time, not a visitor clock, weather observation, article fact-check or author-profile review date. It is visible without JavaScript. Content-specific dates remain separate.
+
+For each site release, run `python3 scripts/site-update-date.py --date YYYY-MM-DD` using the actual release date in JST. Commit `site-update.json` and its listed HTML pages with the change; use `--check-content` before committing. CI also checks Git history and rejects a date differing from the latest published-source change. Tests/docs/CI-only edits and SUBURBIA's independently dated weather cache do not advance this date. This is an explicit release step, not an automatic runtime date. A release crossing midnight JST must refresh its date and checks before publication.
+
+The read-only **Site update date** workflow verifies synchronization and captures visible footers at 390/1280px, including repeat loads and JavaScript-disabled checks, with external browser requests blocked. It adds no runtime request, tracking or deployment permission.
