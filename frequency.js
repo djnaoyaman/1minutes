@@ -46,10 +46,17 @@ function play(i,el){
   o.connect(g).connect(p).connect(master);o.start(t);o.stop(t+dur+.005);sources.push(o);
  }
  function base(){
-  const v=s.type==="binaural"?.19:.16;
-  if(s.type==="binaural"){sound(s.freq,now,3601,v,"sine",-1);sound(s.freq+s.diff,now,duration+.1,v,"sine",1)}
-  else if(s.type==="drone"){sound(55,now,3601,.16);sound(110,now,3601,.06);sound(82.41,now,3601,.045)}
-  else {sound(s.freq,now,3601,.12);if(s.type==="harmonics")sound(1056,now,3601,.025)}
+  // Preserve the scientifically defined binaural difference, while harmonizing other carriers.
+  const carrierDur=3601;
+  if(s.type==="binaural"){
+   sound(s.freq,now,carrierDur,.11,"sine",-1);
+   sound(s.freq+s.diff,now,carrierDur,.11,"sine",1);
+  }else{
+   const f=s.type==="drone"?55:s.freq;
+   const intervals=s.type==="drone"?[1,2,3,4]:[1,1.25,1.5,2];
+   const volumes=s.type==="drone"?[.075,.045,.025,.016]:[.065,.025,.035,.014];
+   intervals.forEach((ratio,j)=>sound(f*ratio,now,carrierDur,volumes[j],"sine",j%2? .35:-.35));
+  }
  }
  // For repeating sessions, the continuous carrier is restarted at each session boundary.
  base();
@@ -61,23 +68,36 @@ function play(i,el){
  const scale=[0,3,5,7,10,12,15,17];
  function tick(step,t){
   if(genre==="pure")return;
-  const st=step%16,bar=Math.floor(step/16),rootNote=rootMidi+[0,-2,-5,-2][bar%4];
-  const melodic=[0,2,4,5,7,5,4,2,3,5,7,4,2,3,1,0][(st+bar%4)%16];
+  const st=step%16,bar=Math.floor(step/16);
+  const progression=[0,-5,-2,-7];
+  const rootNote=rootMidi+progression[Math.floor(bar/2)%4];
+  const chord=[0,3,7,10];
+  const chordKind=genre==="organ"?"sawtooth":genre==="violin"?"sawtooth":genre==="chiptune"?"square":genre==="piano"?"triangle":"sine";
+  const beatLen=stepDur*4;
+  // Every genre now has an actual four-note harmonic bed rather than isolated notes.
+  if(st===0){
+   const durationChord=beatLen*3.95;
+   const volume=genre==="organ"?.019:genre==="violin"?.013:genre==="ambient"?.025:.021;
+   chord.forEach((n,j)=>sound(pitch(rootNote+12+n),t,durationChord,volume,chordKind,(j-1.5)*.28));
+  }
   if(genre==="ambient"||genre==="organ"||genre==="violin"||genre==="piano"){
-   if(st===0){const kind=genre==="organ"?"sawtooth":genre==="violin"?"sawtooth":genre==="piano"?"triangle":"sine";const level=genre==="organ"?.032:genre==="violin"?.022:.065;sound(pitch(rootNote+12),t,Math.min(3.8,stepDur*15),level,kind,-.25);sound(pitch(rootNote+19),t,Math.min(3.8,stepDur*15),level*.5,kind,.3)}
-   if(genre==="piano"&&st%4===0)sound(pitch(rootNote+24+scale[melodic%8]),t,stepDur*3,.048,"triangle",.2);else if(genre==="violin"&&st%4===0)sound(pitch(rootNote+24+scale[melodic%8]),t,stepDur*4,.018,"sawtooth",.2);else if(st%8===4)sound(pitch(rootNote+24+scale[melodic%8]),t,stepDur*7,.028,genre==="organ"?"sine":"sine",.2);
+   if(st%4===0){
+    const arp=[0,7,3,10][(st/4+bar)%4];
+    sound(pitch(rootNote+24+arp),t,stepDur*(genre==="violin"?4:2.8),genre==="piano"?.047:.025,chordKind,.25);
+   }
   }else{
-   if(st%4===0&&(genre==="techno"||genre==="house"||genre==="minimal")){
-    sound(58,t,.13,.18,"sine");sound(41,t,.18,.08,"triangle");
+   if((genre==="techno"||genre==="house")&&st%4===0){
+    sound(58,t,.13,.15,"sine");
+    sound(41,t,.17,.05,"triangle");
    }
-   if(st%4===2&&(genre==="lofi"||genre==="house"||genre==="techno")){
-    sound(170,t,.055,.035,"triangle");
+   if((genre==="techno"||genre==="house"||genre==="lofi")&&st%4===2)sound(170,t,.05,.025,"triangle");
+   if(st%2===0)sound(1800,t,.025,.008,"square",st%4===0?-.35:.35);
+   if(st%4===0||genre==="chiptune"&&st%2===0)sound(pitch(rootNote),t,stepDur*2.4,.06,genre==="chiptune"?"triangle":"sine",-.15);
+   const lead=genre==="chiptune"||genre==="techno"&&st%2===0||genre==="house"&&st%4===3||genre==="lofi"&&st%4===0;
+   if(lead){
+    const arp=[0,7,3,10,7,3,10,12][st%8];
+    sound(pitch(rootNote+24+arp),t,stepDur*(genre==="chiptune"?.85:2),genre==="chiptune"?.045:.028,genre==="chiptune"?"square":"triangle",.25);
    }
-   if(st%2===0&&genre!=="minimal")sound(1800,t,.025,.012,"square",st%4===0?-.35:.35);
-   if(st%4===0||genre==="chiptune"&&st%2===0)
-    sound(pitch(rootNote),t,stepDur*(genre==="ambient"?3:2.4),.075,genre==="chiptune"?"triangle":"sine",-.15);
-   const playLead=genre==="chiptune"||genre==="techno"&&st%2===0||genre==="house"&&st%4===3||genre==="lofi"&&st%4===0;
-   if(playLead)sound(pitch(rootNote+24+scale[melodic%8]),t,stepDur*(genre==="chiptune"?.85:2.5),genre==="chiptune"?.06:.035,genre==="chiptune"?"square":"triangle",.25);
   }
  }
  // 60-second exact pattern repeats; independent of playback length.
