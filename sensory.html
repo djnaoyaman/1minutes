@@ -1,47 +1,31 @@
-<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SENSORY LAB — 1minutes</title><style id="sensory-foundation">
-:root{color-scheme:dark;font-family:Arial,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;background:#101114;color:#f4f2ed}
-*{box-sizing:border-box}html,body{margin:0;padding:0;width:100%;max-width:100%;overflow-x:hidden;-webkit-text-size-adjust:100%}
-body{min-width:0}main{display:block;width:min(100%,1080px);max-width:1080px;margin:0 auto;padding:0 clamp(16px,4vw,32px)}
-header{display:flex;align-items:center;gap:16px;justify-content:space-between;padding:14px clamp(16px,4vw,32px);border-bottom:1px solid #34363a;min-width:0}
-header .brand{display:flex;flex:0 0 auto;align-items:center;text-decoration:none}
-header .brand img{display:block;width:clamp(90px,24vw,132px);height:auto}
-header span{font-size:10px;color:#a8a8a8;letter-spacing:.1em;text-align:right}
-h1,h2,p{overflow-wrap:break-word}h1{line-height:1.05;letter-spacing:-.06em}h2{font-size:clamp(22px,5vw,32px)}
-p{line-height:1.7;color:#aaa}.lead{color:#f4f2ed;font-size:clamp(17px,3vw,25px)}
-.eyebrow{font-size:10px;letter-spacing:.16em;color:#aaa}
-button,input{font:inherit}button{cursor:pointer}
-.lab{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:20px;align-items:start;width:100%}
-.lab>*{min-width:0}#stage.stage{display:block;position:relative;width:100%;height:auto;min-height:0;aspect-ratio:1.35;overflow:hidden;background:#0b1115}
-#stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
-.panel2{width:100%;min-width:0;padding:clamp(16px,3vw,24px)}
-.panel2 button{font-size:clamp(12px,3.4vw,15px);max-width:100%;margin-bottom:8px}
-.chooser{grid-template-columns:repeat(4,minmax(0,1fr))}
-.chooser button{min-width:0;overflow-wrap:anywhere}
-@media(max-width:900px){
-.lab{display:flex;flex-direction:column;gap:14px}
-#stage.stage{aspect-ratio:1.55}
-.chooser{grid-template-columns:repeat(2,minmax(0,1fr))}
-.panel2{width:100%}
-}
-@media(max-width:480px){
-header{padding-block:12px}
-header span{font-size:9px;max-width:48%}
-.hero2{padding:30px 0 12px}
-.hero2 h1{font-size:clamp(38px,11vw,58px)}
-#stage.stage{aspect-ratio:1.45}
-.chooser{gap:6px;margin:12px 0}
-.chooser button{font-size:11px;padding:12px 5px}
-}
-</style><style>main{max-width:1080px}.hero2{padding:65px 0 30px}.hero2 h1{font-size:clamp(50px,10vw,110px)}.chooser{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:20px 0}.chooser button{background:#1e2327;color:white;border:1px solid #555;padding:14px 6px}.chooser button[aria-pressed=true]{background:#4b6870}.lab{display:grid;grid-template-columns:1.5fr 1fr;gap:20px}.stage{position:relative;aspect-ratio:1.3;background:#0b1115;touch-action:manipulation}.stage canvas{width:100%;height:100%;display:block}.panel2{border:1px solid #444;padding:22px}.panel2 label{display:block;margin:15px 0;font-size:13px}.panel2 input{width:100%}.panel2 button{padding:12px 18px;margin-right:8px}.small{font-size:12px;color:#aaa}.bar{height:3px;background:#333}.bar div{height:100%;width:0;background:#bde1e6}@media(max-width:720px){.chooser{grid-template-columns:repeat(2,1fr)}.lab{grid-template-columns:1fr}}</style><style>html,body{max-width:100%;overflow-x:clip}main{width:100%;padding-inline:clamp(14px,4vw,26px)}.lab>*{min-width:0}@media(max-width:760px){.lab{grid-template-columns:minmax(0,1fr)}.stage{width:100%;min-width:0}.chooser{grid-template-columns:repeat(2,minmax(0,1fr)}}@media(max-width:390px){.hero2 h1{font-size:clamp(40px,12vw,60px)}.panel2{padding:16px}}</style><style id="sensory-mobile-layout">
-#stage.stage{display:block;height:auto;aspect-ratio:1.5;min-height:0;max-height:520px;overflow:hidden}
-#stage canvas{position:absolute;inset:0;width:100%;height:100%}
-.chooser button{min-width:0;white-space:normal;overflow-wrap:anywhere}
-@media(max-width:760px){
-.lab{display:flex;flex-direction:column;gap:12px}
-#stage.stage{aspect-ratio:1.65;max-height:none;flex:none}
-.panel2{width:100%;min-width:0}
-.chooser{gap:6px}
-.chooser button{font-size:clamp(10px,2.9vw,13px);padding:12px 4px;min-height:52px}
-}
-@media(max-width:420px){#stage.stage{aspect-ratio:1.7}.hero2{padding:30px 0 12px}.chooser{margin:12px 0}.panel2{padding:16px}}
-</style><link rel="icon" href="./assets/favicon.svg" type="image/svg+xml"><link rel="icon" href="./assets/favicon.ico" sizes="16x16 32x32 48x48"><link rel="icon" href="./assets/icon-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="./assets/apple-touch-icon.png" sizes="180x180"><link rel="mask-icon" href="./assets/safari-pinned-tab.svg" color="#101114"><link rel="manifest" href="./site.webmanifest"><meta name="apple-mobile-web-app-title" content="1minutes"></head><body><header><a class="brand" href="./" aria-label="1minutes ホーム"><img src="./assets/brand-reverse.svg?v=20261101logo2" width="384" height="230" alt="1minute" fetchpriority="high"></a><span>EIGHT SENSORY STUDIES</span></header><main><section class="hero2"><div class="eyebrow">ONE MINUTE FOREVER / EIGHT NEW EXPERIMENTS</div><h1>SENSORY LAB.</h1><p class="lead">60秒で、感覚の世界へ。</p></section><div class="chooser" id="chooser"></div><section class="lab"><div class="stage" id="stage"><canvas id="canvas"></canvas></div><div class="panel2"><div class="eyebrow" id="number"></div><h2 id="name"></h2><p id="desc"></p><div id="controls"></div><button id="start">START 60 SEC</button><button id="save">SAVE PNG</button><div class="bar"><div id="bar"></div></div><p id="status" class="small">READY</p></div></section><section style="padding:50px 0"><h2>観察することから、始まる。</h2><p>心拍は入力値を使ったシミュレーションであり測定ではありません。共鳴と波紋は教育用の表現です。GROWTHは枝・葉脈・陰影・光を重ねた生成アートで、実写映像ではありません。錯視や光の変化で不快感があれば中止してください。</p><a href="./">← BACK TO THE MUSEUM</a></section></main><script src="./sensory.js?v=4"></script></body></html>
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SENSORY LAB — 1minutes</title><link rel="icon" href="./assets/favicon.svg" type="image/svg+xml"><link rel="icon" href="./assets/favicon.ico" sizes="16x16 32x32 48x48"><link rel="icon" href="./assets/icon-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="./assets/apple-touch-icon.png" sizes="180x180"><link rel="mask-icon" href="./assets/safari-pinned-tab.svg" color="#101114"><link rel="manifest" href="./site.webmanifest"><meta name="apple-mobile-web-app-title" content="1minutes"><style>
+:root{color-scheme:dark;font-family:Arial,"Hiragino Kaku Gothic ProN",sans-serif;background:#101114;color:#f4f2ed}
+*,*::before,*::after{box-sizing:border-box}
+html,body{width:100%;max-width:100%;margin:0;padding:0;overflow-x:hidden;-webkit-text-size-adjust:100%}
+body{min-width:0}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px clamp(16px,4vw,32px);border-bottom:1px solid #333;min-height:72px}
+header .brand{display:block;flex:0 0 auto;line-height:0}
+header .brand img{display:block;width:clamp(95px,25vw,132px);height:auto;max-height:65px}
+header span{font-size:10px;letter-spacing:.12em;color:#aaa;text-align:right;min-width:0}
+main{display:block;width:100%;max-width:1080px;margin:0 auto;padding:0 clamp(16px,4vw,32px)}
+h1,h2,p{overflow-wrap:break-word}h1{letter-spacing:-.07em;line-height:1.05}
+p{line-height:1.75;color:#aaa}.lead{font-size:clamp(17px,3vw,26px);color:#eee}
+.eyebrow{font-size:10px;letter-spacing:.17em;color:#aaa}
+.hero2{padding:clamp(28px,6vw,65px) 0 20px}.hero2 h1{font-size:clamp(42px,9vw,108px);margin:20px 0}
+.chooser{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:18px 0}
+.chooser button{background:#1e2327;color:#eee;border:1px solid #555;padding:14px 8px;min-width:0;min-height:54px;overflow-wrap:anywhere;font:inherit;font-size:13px;cursor:pointer}
+.chooser button[aria-pressed=true]{background:#4b6870;border-color:#b8d3d9}
+.lab{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:18px;align-items:start;width:100%;min-width:0}
+.lab>*{min-width:0}
+#stage.stage{display:block;position:relative;min-width:0;width:100%;height:auto;min-height:0;max-height:none;aspect-ratio:1.35;background:#0b1115;overflow:hidden;touch-action:manipulation}
+#stage canvas{display:block;position:absolute;inset:0;width:100%;height:100%}
+.panel2{display:block;position:static;min-width:0;width:100%;border:1px solid #444;padding:clamp(16px,3vw,24px);margin:0;overflow:visible}
+.panel2 h2{font-size:clamp(23px,5vw,34px);margin:18px 0}
+.panel2 label{display:block;margin:15px 0;font-size:13px;color:#bbb}
+.panel2 input{display:block;width:100%;max-width:100%;accent-color:#94c8d6;margin-top:10px}
+.panel2 button{padding:12px 15px;margin:4px 5px 8px 0;font-size:clamp(12px,3vw,15px);background:#eee;color:#111;border:0;border-radius:6px;max-width:100%;cursor:pointer}
+.small{font-size:12px;color:#aaa}.bar{height:3px;background:#333;margin-top:8px}.bar div{height:100%;width:0;background:#bde1e6}
+a{color:inherit}
+@media(max-width:900px){.lab{display:flex;flex-direction:column;gap:12px}#stage.stage{aspect-ratio:1.55}.panel2{width:100%}.chooser{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:480px){header span{font-size:9px;max-width:48%}.hero2 h1{font-size:clamp(39px,11vw,54px)}.chooser{gap:6px;margin:12px 0}.chooser button{font-size:11px;padding:12px 4px;min-height:48px}#stage.stage{aspect-ratio:1.5}.panel2{padding:16px}}
+</style></head><body><header><a class="brand" href="./" aria-label="1minutes ホーム"><img src="./assets/brand-reverse.svg?v=20261101logo2" width="384" height="230" alt="1minute" fetchpriority="high"></a><span>EIGHT SENSORY STUDIES</span></header><main><section class="hero2"><div class="eyebrow">ONE MINUTE FOREVER / EIGHT NEW EXPERIMENTS</div><h1>SENSORY LAB.</h1><p class="lead">60秒で、感覚の世界へ。</p></section><div class="chooser" id="chooser"></div><section class="lab"><div class="stage" id="stage"><canvas id="canvas"></canvas></div><div class="panel2"><div class="eyebrow" id="number"></div><h2 id="name"></h2><p id="desc"></p><div id="controls"></div><button id="start">START 60 SEC</button><button id="save">SAVE PNG</button><div class="bar"><div id="bar"></div></div><p id="status" class="small">READY</p></div></section><section style="padding:50px 0"><h2>観察することから、始まる。</h2><p>心拍は入力値を使ったシミュレーションであり測定ではありません。共鳴と波紋は教育用の表現です。GROWTHは枝・葉脈・陰影・光を重ねた生成アートで、実写映像ではありません。錯視や光の変化で不快感があれば中止してください。</p><a href="./">← BACK TO THE MUSEUM</a></section></main><script src="./sensory.js?v=5"></script></body></html>
