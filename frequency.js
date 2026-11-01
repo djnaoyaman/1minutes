@@ -34,7 +34,7 @@ function play(i,el){
  if(active)return;
  const s=studies[i],genre=el.querySelector(".genre").value,duration=Number(el.querySelector(".length").value)*60;
  const now=ctx.currentTime+.05,master=ctx.createGain(),sources=[];
- master.gain.setValueAtTime(.00001,now);master.gain.linearRampToValueAtTime(.25,now+.8);master.connect(ctx.destination);
+ master.gain.setValueAtTime(.00001,now);master.gain.linearRampToValueAtTime(.75,now+.8);master.connect(ctx.destination);
  const a={i,el,master,sources,button:el.querySelector("button"),bar:el.querySelector(".progress span"),time:el.querySelector(".time"),start:now,duration,next:now,step:0,raf:0,timer:0};
  active=a;a.button.textContent="STOP";a.button.classList.add("active");
  function sound(freq,t,dur,vol,kind="sine",pan=0){
@@ -46,10 +46,10 @@ function play(i,el){
   o.connect(g).connect(p).connect(master);o.start(t);o.stop(t+dur+.005);sources.push(o);
  }
  function base(){
-  const v=s.type==="binaural"?.12:.10;
+  const v=s.type==="binaural"?.19:.16;
   if(s.type==="binaural"){sound(s.freq,now,3601,v,"sine",-1);sound(s.freq+s.diff,now,duration+.1,v,"sine",1)}
-  else if(s.type==="drone"){sound(55,now,3601,.09);sound(110,now,3601,.035);sound(82.41,now,3601,.025)}
-  else {sound(s.freq,now,3601,.055);if(s.type==="harmonics")sound(1056,now,3601,.015)}
+  else if(s.type==="drone"){sound(55,now,3601,.16);sound(110,now,3601,.06);sound(82.41,now,3601,.045)}
+  else {sound(s.freq,now,3601,.12);if(s.type==="harmonics")sound(1056,now,3601,.025)}
  }
  // For repeating sessions, the continuous carrier is restarted at each session boundary.
  base();
