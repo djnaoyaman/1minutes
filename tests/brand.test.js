@@ -9,7 +9,7 @@ test('approved continuous symbol and outlined lettering are used without remote 
   assert.ok((svg.match(/<path\b/g)||[]).length>=7);
  }
  const html=read('index.html');assert.match(html,/class="brand"[^>]*aria-label="1minutes ホーム"/);
- assert.match(html,/src="\.\/assets\/brand-reverse.svg"/);
+ assert.match(html,/src="\.\/assets\/brand-reverse.svg(?:\?[^"\s]+)?"/);
  assert.doesNotMatch(html,/fonts\.googleapis|1minutes\.<\/a>/);
  const schema=JSON.parse(html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1]);
  assert.equal(schema.name,'1minutes — ONE MINUTE FOREVER');

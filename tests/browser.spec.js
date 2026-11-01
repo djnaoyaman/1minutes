@@ -78,3 +78,28 @@ for (const width of [320, 390, 768, 1280]) {
   await expect(page.getByRole('heading', {name:'時間が途切れました。'})).toBeVisible();
  });
 }
+
+for (const width of [320, 390, 768, 1280]) {
+ test(`all exhibition logos preserve identical size and aspect ratio at ${width}px`, async ({page}) => {
+  await page.setViewportSize({width, height:900});
+  let reference;
+  for (const path of ['./', './frequency.html', './breath.html', './sensory.html']) {
+   const errors=[];page.on('pageerror',e=>errors.push(e.message));
+   await page.goto(path);
+   const logo=page.locator('header .brand img');
+   await expect.poll(()=>logo.evaluate(i=>i.complete && i.naturalWidth>0)).toBeTruthy();
+   const box=await logo.boundingBox();
+   expect(box.width / box.height).toBeCloseTo(384 / 230, 2);
+   if(reference){expect(box.width).toBe(reference.width);expect(box.height).toBe(reference.height);expect(box.x).toBe(reference.x);expect(box.y).toBe(reference.y);}else reference=box;
+   expect(await logo.getAttribute('src')).toContain('./assets/brand-reverse.svg');
+   const overflow=await page.locator('main').evaluate(root=>[root,...root.querySelectorAll('*')].filter(e=>{
+    const r=e.getBoundingClientRect();return r.width>0 && (r.left < -1 || r.right>innerWidth+1);
+   }).map(e=>e.tagName+'.'+e.className));
+   expect(overflow,path).toEqual([]);
+   if(path.includes('frequency'))await expect(page.locator('.track')).toHaveCount(6);
+   if(path.includes('breath')){await page.locator('#start').click();await expect(page.locator('#phase')).not.toHaveText('READY');await page.locator('#reset').click();}
+   if(path.includes('sensory')){await page.locator('.chooser button').nth(3).click();await expect(page.locator('#name')).toHaveText('MANDALA');await page.locator('#start').click();await expect(page.locator('#status')).not.toHaveText('READY');}
+   expect(errors).toEqual([]);
+  }
+ });
+}
