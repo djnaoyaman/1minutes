@@ -107,7 +107,7 @@ for (const width of [320, 390, 768, 1280]) {
 test('heartbeat synthesis renders audible two-part pulses at selectable frequencies',async({page})=>{
  await page.goto('./sensory.html');
  const result=await page.evaluate(async()=>{
-  const {scheduleHeartbeat}=await import('./heartbeat-audio.js?v=1');
+  const {scheduleHeartbeat}=await import('./heartbeat-audio.js?v=2');
   const renders=[];
   for(const hz of [40,80,160,240]){
    const context=new OfflineAudioContext(1,44100,44100);
@@ -137,8 +137,8 @@ test('heartbeat is opt-in on start and stops on pause, mode change, hide and com
  expect(await page.evaluate(()=>window.heartbeatAudit.started)).toBe(0);
  await page.locator('#start').click();
  await expect.poll(()=>page.evaluate(()=>window.heartbeatAudit.started)).toBeGreaterThan(0);
- await page.locator('[data-heartbeat-hz="160"]').click();
- await expect(page.locator('#heartbeat-hz-value')).toHaveText('160 Hz');
+ await page.locator('#heartbeat-study').selectOption('0');
+ await expect(page.locator('#heartbeat-frequency')).toContainText('432Hz');
  await page.locator('#heartbeat-volume').fill('50');await expect(page.locator('#heartbeat-volume-value')).toHaveText('50%');
  await page.locator('#start').click();
  expect(await page.evaluate(()=>window.heartbeatAudit.stopped)).toBeGreaterThan(0);
@@ -154,4 +154,31 @@ test('heartbeat is opt-in on start and stops on pause, mode change, hide and com
  await page.evaluate(()=>Object.defineProperty(document,'hidden',{configurable:true,value:false}));
  await page.clock.install();await page.locator('#start').click();await page.clock.fastForward(61000);await expect(page.locator('#status')).toHaveText('60 SEC COMPLETE');
  await page.locator('#start').click();await page.clock.runFor(100);await expect(page.locator('#start')).toHaveText('STOP');await page.locator('#start').click();
+});
+
+test('HEARTBEAT uses the same MUSIC and frequency definitions as FREQUENCY',async({page})=>{
+ await page.goto('./sensory.html');
+ await expect(page.locator('#heartbeat-study')).toHaveValue('5');
+ await expect(page.locator('#heartbeat-frequency')).toContainText('528Hz');
+ const profiles=await page.evaluate(async()=>{
+  const {studies,studyTones}=await import('./sound-studies.js?v=1');
+  const {scheduleHeartbeat}=await import('./heartbeat-audio.js?v=2');
+  return studies.map(study=>{
+   const ctx=new OfflineAudioContext(2,44100,44100),oscillators=[],panners=[];
+   const create=ctx.createOscillator.bind(ctx),pan=ctx.createStereoPanner.bind(ctx);
+   ctx.createOscillator=()=>{const o=create(),set=o.frequency.setValueAtTime.bind(o.frequency);o.frequency.setValueAtTime=(value,time)=>{oscillators.push(value);return set(value,time)};return o};
+   ctx.createStereoPanner=()=>{const p=pan();panners.push(p);return p};
+   scheduleHeartbeat(ctx,ctx.destination,0,studyTones(study));
+   return {title:study.title,frequencies:oscillators.slice(0,oscillators.length/2),pan:panners.slice(0,panners.length/2).map(p=>p.pan.value)};
+  });
+ });
+ expect(profiles.map(p=>p.frequencies)).toEqual([[432],[200,206],[180,182],[220,236],[55,110,82.41,164.82],[528,1056,1584,264]]);
+ expect(profiles[1].pan).toEqual([-1,1]);
+ for(let i=0;i<profiles.length;i++){
+  await page.locator('#heartbeat-study').selectOption(String(i));
+  await expect(page.locator('#heartbeat-music-link')).toHaveAttribute('href','./frequency.html#study-'+profiles[i].title.toLowerCase());
+ }
+ await page.locator('#heartbeat-music-link').click();
+ await expect(page.locator('#study-music')).toBeInViewport();
+ await expect(page.locator('#study-music')).toContainText('528 Hz');
 });

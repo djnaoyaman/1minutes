@@ -1,11 +1,5 @@
-const studies=[
-{title:"ACOUSTIC",sub:"432 Hz / PURE TONE",desc:"432Hzの正弦波。音の高さそのものを聴く。",detail:"期待される体験：穏やかな聴き心地やリラックス。研究状況：小規模な研究はありますが、432Hz固有の効果は未確立。仕組み：432Hzは標準的なA4=440Hzより少し低い調律で話題になる数値です。この展示は432Hzの単音で、健康効果を示すものではありません。",type:"pure",freq:432},
-{title:"MEDITATION",sub:"6 Hz / BINAURAL",desc:"左右200Hz・206Hz。差6Hzのバイノーラル実験。",detail:"期待される体験：瞑想や気持ちを落ち着ける時間。研究状況：バイノーラルビートの研究結果は一貫していません。仕組み：左右の耳に200Hzと206Hzを別々に届け、6Hzの差を知覚する実験です。6Hzはシータ帯域に相当しますが、脳波を6Hzに誘導する効果は確立していません。",type:"binaural",freq:200,diff:6},
-{title:"SLEEP",sub:"2 Hz / BINAURAL",desc:"左右180Hz・182Hz。静かな音量で。",detail:"期待される体験：就寝前のリラックス。研究状況：2Hzの左右差が睡眠を改善するかは未確立。仕組み：180Hzと182Hzの左右差2Hzを使います。2Hzはデルタ帯域に相当しますが、睡眠を促す効果が保証されるものではありません。",type:"binaural",freq:180,diff:2},
-{title:"FOCUS",sub:"16 Hz / BINAURAL",desc:"左右220Hz・236Hz。差16Hzの聴取実験。",detail:"期待される体験：作業への集中や覚醒感。研究状況：集中力向上の効果は確立していません。仕組み：220Hzと236Hzの左右差16Hzを使います。16Hzはベータ帯域に相当しますが、集中力の向上を保証するものではありません。",type:"binaural",freq:220,diff:16},
-{title:"SAUNA",sub:"LOW DRONE / TEXTURE",desc:"55Hzと110Hzの低音ドローン。温冷の余韻。",detail:"期待される体験：低音の没入感や身体感覚への意識。研究状況：この音源による身体機能の改善は検証されていません。仕組み：55Hzと110Hzを中心に、82.41Hzと164.82Hzを重ねた低音ドローンです。身体に振動を与える機械的振動療法とは異なります。",type:"drone"},
-{title:"MUSIC",sub:"528 Hz / HARMONICS",desc:"528Hzと倍音を重ねた音色の実験。",detail:"期待される体験：穏やかな気分やストレス軽減。研究状況：小規模研究はありますが、528Hz固有の健康効果は未確立。仕組み：528Hzを中心に1056Hz・1584Hzの倍音と264Hzを重ねます。528Hzはソルフェジオ周波数として知られますが、固有の治療効果は確立していません。",type:"harmonics",freq:528}
-];
+import {studies, studyTones} from './sound-studies.js?v=1';
+
 const root=document.getElementById("tracks");
 const lengths=[1,2,3,4,5,10,15,20,30,45,60];
 const genres=[
@@ -14,7 +8,7 @@ const genres=[
 const fmt=s=>String(Math.floor(s/60)).padStart(2,"0")+":"+String(Math.floor(s%60)).padStart(2,"0");
 let ctx=null,active=null;
 studies.forEach((s,i)=>{
- const el=document.createElement("article");el.className="track";
+ const el=document.createElement("article");el.className="track";el.id="study-"+s.title.toLowerCase();
  el.innerHTML='<small>'+String(i+1).padStart(2,"0")+' / '+s.sub+'</small><h2>'+s.title+'</h2><p>'+s.desc+'</p><p class="detail">'+s.detail+'</p><div class="controls"><label>音楽 <select class="genre" aria-label="音楽ジャンル">'+genres.map(([v,n])=>'<option value="'+v+'">'+n+'</option>').join("")+'</select></label><label>長さ <select class="length" aria-label="再生時間">'+lengths.map(n=>'<option value="'+n+'">'+n+'分</option>').join("")+'</select></label><label><input class="repeat" type="checkbox"> リピート</label></div><p class="caveat">各ジャンルはオリジナルの60秒ループ。選択した周波数の音を重ねて再生します。</p><button type="button">PLAY</button><div class="progress"><span></span></div><small class="time">01:00</small>';
  root.append(el);el.querySelector("button").onclick=()=>play(i,el);
  for(const c of el.querySelectorAll("select"))c.onchange=()=>{if(active&&active.i===i)stop();el.querySelector(".time").textContent=fmt(Number(el.querySelector(".length").value)*60)};
@@ -48,22 +42,15 @@ function play(i,el){
  function base(){
   // Preserve the scientifically defined binaural difference, while harmonizing other carriers.
   const carrierDur=3601;
-  if(s.type==="binaural"){
-   sound(s.freq,now,carrierDur,.11,"sine",-1);
-   sound(s.freq+s.diff,now,carrierDur,.11,"sine",1);
-  }else{
-   const f=s.type==="drone"?55:s.freq;
-   const intervals=s.type==="drone"?[1,2,3,4]:[1,1.25,1.5,2];
-   const volumes=s.type==="drone"?[.075,.045,.025,.016]:[.065,.025,.035,.014];
-   intervals.forEach((ratio,j)=>sound(f*ratio,now,carrierDur,volumes[j],"sine",j%2? .35:-.35));
-  }
+  const level=s.type==='binaural'?.157:.14;
+  for(const [frequency, amplitude, pan] of studyTones(s))sound(frequency,now,carrierDur,amplitude*level,'sine',pan);
  }
  // For repeating sessions, the continuous carrier is restarted at each session boundary.
  base();
  const tempo={organ:80,violin:80,piano:100,ambient:80,techno:120,chiptune:150,lofi:100,house:120}[genre]||120;
  const stepDur=60/tempo/4;
  const rootMidi=[48,45,41,43][i%4];
- const tuning=s.type==="pure"?432:s.type==="harmonics"?528:440;
+ const tuning=(s.type==="pure"||s.type==="harmonics")?s.freq:440;
  const pitch=m=>tuning*2**((m-(s.type==="pure"?69:s.type==="harmonics"?72:69))/12);
  const scale=[0,3,5,7,10,12,15,17];
  function tick(step,t){

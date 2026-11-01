@@ -2,19 +2,24 @@
 export function scheduleHeartbeat(context, destination, at, hz, voices = new Set()) {
  for (const [offset, level, duration] of [[0, .95, .18], [.22, .72, .14]]) {
   const start = at + offset;
+  const tones = Array.isArray(hz) ? hz : [[hz,1,0]];
+  for(const [frequency, amplitude, pan] of tones){
   const voice = context.createOscillator();
   const envelope = context.createGain();
   voice.type = 'sine';
-  voice.frequency.setValueAtTime(hz * 1.3, start);
-  voice.frequency.exponentialRampToValueAtTime(hz, start + .035);
+  voice.frequency.setValueAtTime(frequency, start);
   envelope.gain.setValueAtTime(0, start);
-  envelope.gain.linearRampToValueAtTime(level, start + .008);
+  envelope.gain.linearRampToValueAtTime(level * amplitude, start + .008);
   envelope.gain.exponentialRampToValueAtTime(.001, start + duration);
   envelope.gain.linearRampToValueAtTime(0, start + duration + .015);
-  voice.connect(envelope).connect(destination);
+  const panner=pan ? context.createStereoPanner() : null;
+  if(panner)panner.pan.value=pan;
+  voice.connect(envelope);
+  if(panner)envelope.connect(panner).connect(destination);else envelope.connect(destination);
   voices.add(voice);
-  voice.onended = () => { voices.delete(voice); voice.disconnect(); envelope.disconnect(); };
+  voice.onended = () => { voices.delete(voice); voice.disconnect(); envelope.disconnect(); panner?.disconnect(); };
   voice.start(start); voice.stop(start + duration + .02);
+  }
  }
 }
 

@@ -1,6 +1,7 @@
-import {HeartbeatAudio} from './heartbeat-audio.js?v=1';
+import {studies, studyTones} from './sound-studies.js?v=1';
+import {HeartbeatAudio} from './heartbeat-audio.js?v=2';
 const heartbeat = new HeartbeatAudio();
-let soundEnabled = true, soundHz = 80, soundVolume = .8;
+let soundEnabled = true, soundStudy = 5, soundVolume = .8;
 const modes=[
 ["HEARTBEAT","心拍を、聴く。入力したBPMで光と2拍の心音が脈動します。",["BPM",60,40,180]],
 ["ILLUSION","脳を、疑う。幾何学模様の錯視を観察します。",["密度",16,6,30]],
@@ -20,7 +21,7 @@ function stopSession(){running=false;cancelAnimationFrame(raf);heartbeat.stop()}
 function restartHeartbeat(){
  heartbeat.stop();
  if(index!==0 || !running || !soundEnabled)return;
- heartbeat.start({bpm:V(),hz:soundHz,volume:soundVolume,elapsed}).catch(()=>{
+ heartbeat.start({bpm:V(),hz:studyTones(studies[soundStudy]),volume:soundVolume,elapsed}).catch(()=>{
   heartbeat.stop();soundEnabled=false;
   if($('heartbeat-sound'))$('heartbeat-sound').checked=false;
   if($('audio-status'))$('audio-status').textContent='心音を再生できませんでした。音をオンにして再試行してください。';
@@ -29,14 +30,13 @@ function restartHeartbeat(){
 function renderSoundControls(){
  $('controls').insertAdjacentHTML('beforeend',`<fieldset class="heartbeat-controls"><legend>心音</legend>
  <label class="sound-toggle"><input id="heartbeat-sound" type="checkbox" ${soundEnabled?'checked':''}> 心音を鳴らす</label>
- <label>音の高さ <output id="heartbeat-hz-value">${soundHz} Hz</output><input id="heartbeat-hz" type="range" min="40" max="240" step="1" value="${soundHz}"></label>
- <div class="heartbeat-presets" aria-label="心音の音の高さ">${[40,60,80,100,120,160,200,240].map(hz=>`<button type="button" data-heartbeat-hz="${hz}" aria-pressed="${hz===soundHz}">${hz} Hz</button>`).join('')}</div>
+ <label>周波数コンテンツ<select id="heartbeat-study">${studies.map((study,i)=>`<option value="${i}" ${i===soundStudy?'selected':''}>${study.title} — ${study.sub}</option>`).join('')}</select></label>
+ <p id="heartbeat-frequency" class="small">${studies[soundStudy].desc}</p>
+ <a href="./frequency.html#study-${studies[soundStudy].title.toLowerCase()}" id="heartbeat-music-link">同じ周波数を音楽で聴く →</a>
  <label>音量 <output id="heartbeat-volume-value">${Math.round(soundVolume*100)}%</output><input id="heartbeat-volume" type="range" min="0" max="100" value="${soundVolume*100}"></label>
- <p class="small">BPMは鼓動の速さ、Hzは音の高さです。標準音量80%。聴こえ方は端末と本体の音量によって変わります。</p><p id="audio-status" class="small" role="status">STARTで心音が再生されます。</p></fieldset>`);
+ <p class="small">MUSICは528Hz＋倍音。各設定はFREQUENCYと共通です。BPMは鼓動の速さです。標準音量80%。聴こえ方は端末と本体の音量によって変わります。</p><p id="audio-status" class="small" role="status">STARTで心音が再生されます。</p></fieldset>`);
  $('heartbeat-sound').onchange=e=>{soundEnabled=e.target.checked;restartHeartbeat();$('audio-status').textContent=soundEnabled?'心音：オン（STARTで再生）':'心音：オフ'};
- const setHz=hz=>{soundHz=hz;$('heartbeat-hz').value=hz;$('heartbeat-hz-value').textContent=hz+' Hz';document.querySelectorAll('[data-heartbeat-hz]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.heartbeatHz)===hz)));restartHeartbeat()};
- $('heartbeat-hz').oninput=e=>setHz(Number(e.target.value));
- document.querySelectorAll('[data-heartbeat-hz]').forEach(b=>b.onclick=()=>setHz(Number(b.dataset.heartbeatHz)));
+ $('heartbeat-study').onchange=e=>{soundStudy=Number(e.target.value);$('heartbeat-frequency').textContent=studies[soundStudy].desc;$('heartbeat-music-link').href='./frequency.html#study-'+studies[soundStudy].title.toLowerCase();restartHeartbeat()};
  $('heartbeat-volume').oninput=e=>{soundVolume=Number(e.target.value)/100;$('heartbeat-volume-value').textContent=e.target.value+'%';heartbeat.setVolume(soundVolume)};
 }
 $('start').onclick=()=>{
