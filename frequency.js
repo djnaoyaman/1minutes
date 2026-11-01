@@ -1,19 +1,23 @@
 const studies=[
-{title:"ACOUSTIC",sub:"432 Hz / PURE TONE",desc:"432Hzの正弦波。音の高さそのものを聴く。",type:"pure",freq:432},
-{title:"MEDITATION",sub:"6 Hz / BINAURAL",desc:"左右200Hz・206Hz。差6Hzのバイノーラル実験。",type:"binaural",freq:200,diff:6},
-{title:"SLEEP",sub:"2 Hz / BINAURAL",desc:"左右180Hz・182Hz。静かな音量で。",type:"binaural",freq:180,diff:2},
-{title:"FOCUS",sub:"16 Hz / BINAURAL",desc:"左右220Hz・236Hz。差16Hzの聴取実験。",type:"binaural",freq:220,diff:16},
-{title:"SAUNA",sub:"LOW DRONE / TEXTURE",desc:"55Hzと110Hzの低音ドローン。温冷の余韻。",type:"drone"},
-{title:"MUSIC",sub:"528 Hz / HARMONICS",desc:"528Hzと倍音を重ねた音色の実験。",type:"harmonics",freq:528}
+{title:"ACOUSTIC",sub:"432 Hz / PURE TONE",desc:"432Hzの正弦波。音の高さそのものを聴く。",detail:"432Hzは標準的なA4=440Hzより少し低い調律で話題になる数値です。この展示は432Hzの単音で、健康効果を示すものではありません。",type:"pure",freq:432},
+{title:"MEDITATION",sub:"6 Hz / BINAURAL",desc:"左右200Hz・206Hz。差6Hzのバイノーラル実験。",detail:"左右の耳に200Hzと206Hzを別々に届け、6Hzの差を知覚する実験です。6Hzはシータ帯域に相当しますが、脳波を6Hzに誘導する効果は確立していません。",type:"binaural",freq:200,diff:6},
+{title:"SLEEP",sub:"2 Hz / BINAURAL",desc:"左右180Hz・182Hz。静かな音量で。",detail:"180Hzと182Hzの左右差2Hzを使います。2Hzはデルタ帯域に相当しますが、睡眠を促す効果が保証されるものではありません。",type:"binaural",freq:180,diff:2},
+{title:"FOCUS",sub:"16 Hz / BINAURAL",desc:"左右220Hz・236Hz。差16Hzの聴取実験。",detail:"220Hzと236Hzの左右差16Hzを使います。16Hzはベータ帯域に相当しますが、集中力の向上を保証するものではありません。",type:"binaural",freq:220,diff:16},
+{title:"SAUNA",sub:"LOW DRONE / TEXTURE",desc:"55Hzと110Hzの低音ドローン。温冷の余韻。",detail:"55Hzと110Hzを中心に、82.41Hzと164.82Hzを重ねた低音ドローンです。身体に振動を与える機械的振動療法とは異なります。",type:"drone"},
+{title:"MUSIC",sub:"528 Hz / HARMONICS",desc:"528Hzと倍音を重ねた音色の実験。",detail:"528Hzを中心に1056Hz・1584Hzの倍音と264Hzを重ねます。528Hzはソルフェジオ周波数として知られますが、固有の治療効果は確立していません。",type:"harmonics",freq:528}
 ];
 const root=document.getElementById("tracks");let ctx=null,active=null,raf=0;
-studies.forEach((s,i)=>{const el=document.createElement("article");el.className="track";el.innerHTML='<small>'+String(i+1).padStart(2,"0")+' / '+s.sub+'</small><h2>'+s.title+'</h2><p>'+s.desc+'</p><button type="button" aria-label="'+s.title+'を再生">PLAY 60 SEC</button><div class="progress"><span></span></div><small class="time">01:00</small>';root.append(el);el.querySelector("button").onclick=()=>play(i,el)});
-function stop(){cancelAnimationFrame(raf);if(active){try{active.nodes.forEach(n=>n.stop())}catch(e){}active.button.textContent="PLAY 60 SEC";active.button.classList.remove("active");active=null}}
-function play(i,el){if(active&&active.i===i){stop();return}stop();const AC=window.AudioContext||window.webkitAudioContext;if(!AC){alert("このブラウザはWeb Audioに対応していません");return}ctx=ctx||new AC();ctx.resume();const s=studies[i],now=ctx.currentTime,duration=60;const master=ctx.createGain();master.gain.setValueAtTime(0.00001,now);master.gain.linearRampToValueAtTime(.12,now+2);master.gain.setValueAtTime(.12,now+56);master.gain.linearRampToValueAtTime(0.00001,now+60);master.connect(ctx.destination);const nodes=[];
-function osc(freq,level,pan=0,type="sine"){const o=ctx.createOscillator(),g=ctx.createGain(),p=ctx.createStereoPanner();o.type=type;o.frequency.value=freq;g.gain.value=level;p.pan.value=pan;o.connect(g).connect(p).connect(master);o.start(now);o.stop(now+duration);nodes.push(o)}
+const lengths=[1,2,3,5,10,15,20,30,45,60];
+const fmt=s=>String(Math.floor(s/60)).padStart(2,"0")+":"+String(Math.floor(s%60)).padStart(2,"0");
+studies.forEach((s,i)=>{const el=document.createElement("article");el.className="track";el.innerHTML='<small>'+String(i+1).padStart(2,"0")+' / '+s.sub+'</small><h2>'+s.title+'</h2><p>'+s.desc+'</p><p class="detail">'+s.detail+'</p><div class="controls"><label>長さ <select class="length" aria-label="再生時間">'+lengths.map(n=>'<option value="'+n+'" '+(n===1?'selected':'')+'>'+n+'分</option>').join("")+'</select></label><label><input type="checkbox" class="repeat"> リピート</label></div><button type="button" aria-label="'+s.title+'を再生">PLAY</button><div class="progress"><span></span></div><small class="time">01:00</small>';root.append(el);el.querySelector("button").onclick=()=>play(i,el);el.querySelector(".length").onchange=()=>{if(active&&active.i===i)stop();el.querySelector(".time").textContent=fmt(Number(el.querySelector(".length").value)*60)}});
+function stop(){cancelAnimationFrame(raf);if(active){const a=active;active=null;try{a.nodes.forEach(n=>n.stop())}catch(e){}try{a.master.disconnect()}catch(e){}a.button.textContent="PLAY";a.button.classList.remove("active");a.bar.style.width="0%";a.time.textContent=fmt(Number(a.el.querySelector(".length").value)*60)}}
+function play(i,el){if(active&&active.i===i){stop();return}stop();const AC=window.AudioContext||window.webkitAudioContext;if(!AC){alert("このブラウザはWeb Audioに対応していません");return}ctx=ctx||new AC();ctx.resume().then(()=>{if(active)return;const s=studies[i],now=ctx.currentTime,duration=Number(el.querySelector(".length").value)*60;const master=ctx.createGain();master.gain.value=.00001;master.connect(ctx.destination);const nodes=[];
+function osc(freq,level,pan=0){const o=ctx.createOscillator(),g=ctx.createGain(),p=ctx.createStereoPanner();o.frequency.value=freq;g.gain.value=level;p.pan.value=pan;o.connect(g).connect(p).connect(master);o.start();nodes.push(o)}
 if(s.type==="pure")osc(s.freq,1);
 if(s.type==="binaural"){osc(s.freq,.7,-1);osc(s.freq+s.diff,.7,1)}
 if(s.type==="drone"){osc(55,.55);osc(110,.2);osc(82.41,.18);osc(164.82,.08)}
 if(s.type==="harmonics"){osc(528,.65);osc(1056,.2);osc(1584,.1);osc(264,.12)}
-const button=el.querySelector("button"),bar=el.querySelector(".progress span"),time=el.querySelector(".time");button.textContent="STOP";button.classList.add("active");active={i,nodes,button};function frame(){if(!active||active.i!==i)return;const t=Math.min(60,Math.max(0,ctx.currentTime-now));bar.style.width=t/60*100+"%";time.textContent="00:"+String(Math.ceil(60-t)).padStart(2,"0");if(t>=60){active=null;button.textContent="REPLAY 60 SEC";button.classList.remove("active");return}raf=requestAnimationFrame(frame)}frame()}
+const button=el.querySelector("button"),bar=el.querySelector(".progress span"),time=el.querySelector(".time");button.textContent="STOP";button.classList.add("active");const a={i,el,nodes,master,button,bar,time};active=a;
+master.gain.setValueAtTime(.00001,now);master.gain.linearRampToValueAtTime(.12,now+1);
+function frame(){if(active!==a)return;const elapsed=ctx.currentTime-now;const repeat=el.querySelector(".repeat").checked;const t=repeat?elapsed%duration:Math.min(duration,elapsed);bar.style.width=(t/duration*100)+"%";time.textContent=fmt(Math.max(0,Math.ceil(duration-t)));if(!repeat&&elapsed>=duration){stop();button.textContent="REPLAY";return}raf=requestAnimationFrame(frame)}frame()})}
 document.addEventListener("visibilitychange",()=>{if(document.hidden)stop()});
