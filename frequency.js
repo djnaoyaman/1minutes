@@ -6,18 +6,106 @@ const studies=[
 {title:"SAUNA",sub:"LOW DRONE / TEXTURE",desc:"55Hzと110Hzの低音ドローン。温冷の余韻。",detail:"期待される体験：低音の没入感や身体感覚への意識。研究状況：この音源による身体機能の改善は検証されていません。仕組み：55Hzと110Hzを中心に、82.41Hzと164.82Hzを重ねた低音ドローンです。身体に振動を与える機械的振動療法とは異なります。",type:"drone"},
 {title:"MUSIC",sub:"528 Hz / HARMONICS",desc:"528Hzと倍音を重ねた音色の実験。",detail:"期待される体験：穏やかな気分やストレス軽減。研究状況：小規模研究はありますが、528Hz固有の健康効果は未確立。仕組み：528Hzを中心に1056Hz・1584Hzの倍音と264Hzを重ねます。528Hzはソルフェジオ周波数として知られますが、固有の治療効果は確立していません。",type:"harmonics",freq:528}
 ];
-const root=document.getElementById("tracks");let ctx=null,active=null,raf=0;
+const root=document.getElementById("tracks");
 const lengths=[1,2,3,4,5,10,15,20,30,45,60];
+const genres=[
+["pure","周波数のみ"],["ambient","AMBIENT"],["techno","TECHNO"],["chiptune","8-BIT"],["lofi","LO-FI HIP HOP"],["house","DEEP HOUSE"],["minimal","MINIMAL"]
+];
 const fmt=s=>String(Math.floor(s/60)).padStart(2,"0")+":"+String(Math.floor(s%60)).padStart(2,"0");
-studies.forEach((s,i)=>{const el=document.createElement("article");el.className="track";el.innerHTML='<small>'+String(i+1).padStart(2,"0")+' / '+s.sub+'</small><h2>'+s.title+'</h2><p>'+s.desc+'</p><p class="detail">'+s.detail+'</p><div class="controls"><label>長さ <select class="length" aria-label="再生時間">'+lengths.map(n=>'<option value="'+n+'" '+(n===1?'selected':'')+'>'+n+'分</option>').join("")+'</select></label><label><input type="checkbox" class="repeat"> リピート</label></div><button type="button" aria-label="'+s.title+'を再生">PLAY</button><div class="progress"><span></span></div><small class="time">01:00</small>';root.append(el);el.querySelector("button").onclick=()=>play(i,el);el.querySelector(".length").onchange=()=>{if(active&&active.i===i)stop();el.querySelector(".time").textContent=fmt(Number(el.querySelector(".length").value)*60)}});
-function stop(){cancelAnimationFrame(raf);if(active){const a=active;active=null;try{a.nodes.forEach(n=>n.stop())}catch(e){}try{a.master.disconnect()}catch(e){}a.button.textContent="PLAY";a.button.classList.remove("active");a.bar.style.width="0%";a.time.textContent=fmt(Number(a.el.querySelector(".length").value)*60)}}
-function play(i,el){if(active&&active.i===i){stop();return}stop();const AC=window.AudioContext||window.webkitAudioContext;if(!AC){alert("このブラウザはWeb Audioに対応していません");return}ctx=ctx||new AC();ctx.resume().then(()=>{if(active)return;const s=studies[i],now=ctx.currentTime,duration=Number(el.querySelector(".length").value)*60;const master=ctx.createGain();master.gain.value=.00001;master.connect(ctx.destination);const nodes=[];
-function osc(freq,level,pan=0){const o=ctx.createOscillator(),g=ctx.createGain(),p=ctx.createStereoPanner();o.frequency.value=freq;g.gain.value=level;p.pan.value=pan;o.connect(g).connect(p).connect(master);o.start();nodes.push(o)}
-if(s.type==="pure")osc(s.freq,1);
-if(s.type==="binaural"){osc(s.freq,.7,-1);osc(s.freq+s.diff,.7,1)}
-if(s.type==="drone"){osc(55,.55);osc(110,.2);osc(82.41,.18);osc(164.82,.08)}
-if(s.type==="harmonics"){osc(528,.65);osc(1056,.2);osc(1584,.1);osc(264,.12)}
-const button=el.querySelector("button"),bar=el.querySelector(".progress span"),time=el.querySelector(".time");button.textContent="STOP";button.classList.add("active");const a={i,el,nodes,master,button,bar,time};active=a;
-master.gain.setValueAtTime(.00001,now);master.gain.linearRampToValueAtTime(.12,now+1);
-function frame(){if(active!==a)return;const elapsed=ctx.currentTime-now;const repeat=el.querySelector(".repeat").checked;const t=repeat?elapsed%duration:Math.min(duration,elapsed);bar.style.width=(t/duration*100)+"%";time.textContent=fmt(Math.max(0,Math.ceil(duration-t)));if(!repeat&&elapsed>=duration){stop();button.textContent="REPLAY";return}raf=requestAnimationFrame(frame)}frame()})}
+let ctx=null,active=null;
+studies.forEach((s,i)=>{
+ const el=document.createElement("article");el.className="track";
+ el.innerHTML='<small>'+String(i+1).padStart(2,"0")+' / '+s.sub+'</small><h2>'+s.title+'</h2><p>'+s.desc+'</p><p class="detail">'+s.detail+'</p><div class="controls"><label>音楽 <select class="genre" aria-label="音楽ジャンル">'+genres.map(([v,n])=>'<option value="'+v+'">'+n+'</option>').join("")+'</select></label><label>長さ <select class="length" aria-label="再生時間">'+lengths.map(n=>'<option value="'+n+'">'+n+'分</option>').join("")+'</select></label><label><input class="repeat" type="checkbox"> リピート</label></div><p class="caveat">各ジャンルはオリジナルの60秒ループ。選択した周波数の音を重ねて再生します。</p><button type="button">PLAY</button><div class="progress"><span></span></div><small class="time">01:00</small>';
+ root.append(el);el.querySelector("button").onclick=()=>play(i,el);
+ for(const c of el.querySelectorAll("select"))c.onchange=()=>{if(active&&active.i===i)stop();el.querySelector(".time").textContent=fmt(Number(el.querySelector(".length").value)*60)};
+});
+function stop(){
+ if(!active)return;const a=active;active=null;clearInterval(a.timer);cancelAnimationFrame(a.raf);
+ try{a.master.gain.setTargetAtTime(0,ctx.currentTime,.015)}catch(e){}
+ setTimeout(()=>{try{a.sources.forEach(n=>n.stop());a.master.disconnect()}catch(e){}},120);
+ a.button.textContent="PLAY";a.button.classList.remove("active");a.bar.style.width="0%";a.time.textContent=fmt(Number(a.el.querySelector(".length").value)*60);
+}
+function play(i,el){
+ if(active&&active.i===i){stop();return}stop();
+ const AC=window.AudioContext||window.webkitAudioContext;
+ if(!AC){alert("Web Audio非対応のブラウザです");return}
+ ctx=ctx||new AC();
+ ctx.resume().then(()=>{
+ if(active)return;
+ const s=studies[i],genre=el.querySelector(".genre").value,duration=Number(el.querySelector(".length").value)*60;
+ const now=ctx.currentTime+.05,master=ctx.createGain(),sources=[];
+ master.gain.setValueAtTime(.00001,now);master.gain.linearRampToValueAtTime(.25,now+.8);master.connect(ctx.destination);
+ const a={i,el,master,sources,button:el.querySelector("button"),bar:el.querySelector(".progress span"),time:el.querySelector(".time"),start:now,duration,next:now,step:0,raf:0,timer:0};
+ active=a;a.button.textContent="STOP";a.button.classList.add("active");
+ function sound(freq,t,dur,vol,kind="sine",pan=0){
+  if(t>=a.start+duration&&!el.querySelector(".repeat").checked)return;
+  const o=ctx.createOscillator(),g=ctx.createGain(),p=ctx.createStereoPanner();
+  o.type=kind;o.frequency.setValueAtTime(freq,t);p.pan.value=pan;
+  g.gain.setValueAtTime(.00001,t);g.gain.linearRampToValueAtTime(vol,t+.008);
+  g.gain.setValueAtTime(vol,t+Math.max(.009,dur-.045));g.gain.exponentialRampToValueAtTime(.00001,t+dur);
+  o.connect(g).connect(p).connect(master);o.start(t);o.stop(t+dur+.005);sources.push(o);
+ }
+ function base(){
+  const v=s.type==="binaural"?.12:.10;
+  if(s.type==="binaural"){sound(s.freq,now,duration+.1,v,"sine",-1);sound(s.freq+s.diff,now,duration+.1,v,"sine",1)}
+  else if(s.type==="drone"){sound(55,now,duration+.1,.09);sound(110,now,duration+.1,.035);sound(82.41,now,duration+.1,.025)}
+  else {sound(s.freq,now,duration+.1,.055);if(s.type==="harmonics")sound(1056,now,duration+.1,.015)}
+ }
+ // For repeating sessions, the continuous carrier is restarted at each session boundary.
+ base();
+ const tempo={ambient:80,techno:120,chiptune:150,lofi:88,house:120,minimal:120}[genre]||120;
+ const stepDur=60/tempo/4;
+ const rootMidi=[48,45,41,43][i%4];
+ const tuning=s.type==="pure"?432:s.type==="harmonics"?528:440;
+ const pitch=m=>tuning*2**((m-(s.type==="pure"?69:s.type==="harmonics"?72:69))/12);
+ const scale=[0,3,5,7,10,12,15,17];
+ function tick(step,t){
+  if(genre==="pure")return;
+  const st=step%16,bar=Math.floor(step/16),rootNote=rootMidi+[0,-2,-5,-2][bar%4];
+  const melodic=[0,2,4,5,7,5,4,2,3,5,7,4,2,3,1,0][(st+bar%4)%16];
+  if(genre==="ambient"){
+   if(st===0){sound(pitch(rootNote+12),t,Math.min(3.8,stepDur*15),.065,"sine",-.25);sound(pitch(rootNote+19),t,Math.min(3.8,stepDur*15),.035,"sine",.3)}
+   if(st%8===4)sound(pitch(rootNote+24+scale[melodic%8]),t,stepDur*7,.028,"sine",.2);
+  }else{
+   if(st%4===0&&(genre==="techno"||genre==="house"||genre==="minimal")){
+    sound(58,t,.13,.18,"sine");sound(41,t,.18,.08,"triangle");
+   }
+   if(st%4===2&&(genre==="lofi"||genre==="house"||genre==="techno")){
+    sound(170,t,.055,.035,"triangle");
+   }
+   if(st%2===0&&genre!=="minimal")sound(1800,t,.025,.012,"square",st%4===0?-.35:.35);
+   if(st%4===0||genre==="chiptune"&&st%2===0||genre==="minimal"&&st%8===0)
+    sound(pitch(rootNote),t,stepDur*(genre==="ambient"?3:2.4),.075,genre==="chiptune"?"triangle":"sine",-.15);
+   const playLead=genre==="chiptune"||genre==="techno"&&st%2===0||genre==="house"&&st%4===3||genre==="lofi"&&st%4===0||genre==="minimal"&&st%8===6;
+   if(playLead)sound(pitch(rootNote+24+scale[melodic%8]),t,stepDur*(genre==="chiptune"?.85:2.5),genre==="chiptune"?.06:.035,genre==="chiptune"?"square":"triangle",.25);
+  }
+ }
+ // 60-second exact pattern repeats; independent of playback length.
+ // 60s is a whole number of bars for all five tempi (80, 88, 120, 150 BPM).
+ function schedule(){
+  if(active!==a)return;
+  const limit=ctx.currentTime+.18;
+  while(a.next<limit&&a.next<a.start+duration+.01){
+   if(a.next>=a.start)tick(a.step,a.next);
+   a.step++;a.next=a.start+a.step*stepDur;
+  }
+ }
+ a.timer=setInterval(schedule,45);schedule();
+ function frame(){
+  if(active!==a)return;
+  const elapsed=Math.max(0,ctx.currentTime-a.start);
+  if(elapsed>=duration){
+   if(el.querySelector(".repeat").checked){
+    // restart exactly at boundary; next cycle is scheduled from the new session start
+    const over=elapsed%duration;
+    a.start=ctx.currentTime-over;a.step=0;a.next=a.start;
+    // continuous carrier remains audible throughout repeat
+   }else{stop();a.button.textContent="REPLAY";return}
+  }
+  const e=Math.max(0,ctx.currentTime-a.start);
+  a.bar.style.width=Math.min(100,e/duration*100)+"%";a.time.textContent=fmt(Math.max(0,Math.ceil(duration-e)));
+  a.raf=requestAnimationFrame(frame);
+ }frame();
+ });
+}
 document.addEventListener("visibilitychange",()=>{if(document.hidden)stop()});
