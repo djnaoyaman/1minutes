@@ -16,7 +16,15 @@ const $=x=>document.getElementById(x),cv=$("canvas"),g=cv.getContext("2d");let i
 const W=()=>cv.clientWidth,H=()=>cv.clientHeight,V=()=>Number($("parameter").value);
 function resize(){let d=Math.min(devicePixelRatio||1,2);cv.width=W()*d;cv.height=H()*d;g.setTransform(d,0,0,d,0,0)}
 function select(i){stopSession();index=i;running=false;elapsed=0;ripples=[];errors=[];const m=modes[i];$("number").textContent=String(i+1).padStart(2,"0")+" / 08";$("name").textContent=m[0];$("desc").textContent=m[1];$("controls").innerHTML='<label>'+m[2][0]+' <output id="value">'+m[2][1]+'</output><input id="parameter" type="range" value="'+m[2][1]+'" min="'+m[2][2]+'" max="'+m[2][3]+'"></label>';$("parameter").oninput=()=>{$("value").textContent=V();restartHeartbeat();draw(elapsed)};if(i===0)renderSoundControls();document.querySelectorAll(".chooser button").forEach((b,n)=>b.setAttribute("aria-pressed",String(n===i)));$("start").textContent="START 60 SEC";$("status").textContent="READY";$("bar").style.width="0%";draw(0)}
-modes.forEach((m,i)=>{let b=document.createElement("button");b.textContent=String(i+1).padStart(2,"0")+" "+m[0];b.onclick=()=>select(i);$("chooser").append(b)});
+modes.forEach((m,i)=>{let b=document.createElement("button");if(m[0]==="RIPPLE")b.id="ripple";b.textContent=String(i+1).padStart(2,"0")+" "+m[0];b.onclick=()=>select(i);$("chooser").append(b)});
+// Fragment navigation only moves attention; selection and playback stay user-controlled.
+function focusRippleFragment(){
+ if(location.hash!=="#ripple")return;
+ const button=$("ripple");
+ button.focus({preventScroll:true});
+ button.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth',block:'center'});
+}
+window.addEventListener('hashchange',focusRippleFragment);
 function stopSession(){running=false;cancelAnimationFrame(raf);heartbeat.stop()}
 function restartHeartbeat(){
  heartbeat.stop();
@@ -94,3 +102,4 @@ if(index===6){g.fillStyle="#122b35";g.fillRect(0,0,w,h);let now=performance.now(
 if(index===7){let p=(t*V()/60)%1,r=Math.min(w,h)*(.14+.06*Math.exp(-p*18));g.strokeStyle="#b7e2e7";g.lineWidth=4;g.beginPath();g.arc(x,y,r,0,7);g.stroke();g.fillStyle="#e5eff0";g.font="34px sans-serif";g.textAlign="center";g.fillText(v+" BPM",x,y+12);g.font="15px sans-serif";g.fillText("TAP THE CIRCLE",x,y+50)}
 }
 window.addEventListener("resize",()=>{resize();draw(elapsed)});resize();select(0);
+focusRippleFragment();
