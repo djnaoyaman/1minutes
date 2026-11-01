@@ -103,3 +103,55 @@ for (const width of [320, 390, 768, 1280]) {
   }
  });
 }
+
+test('heartbeat synthesis renders audible two-part pulses at selectable frequencies',async({page})=>{
+ await page.goto('./sensory.html');
+ const result=await page.evaluate(async()=>{
+  const {scheduleHeartbeat}=await import('./heartbeat-audio.js?v=1');
+  const renders=[];
+  for(const hz of [40,80,160,240]){
+   const context=new OfflineAudioContext(1,44100,44100);
+   scheduleHeartbeat(context,context.destination,.02,hz);
+   const audio=(await context.startRendering()).getChannelData(0);
+   const rms=(from,to)=>Math.sqrt(audio.slice(from*44100,to*44100).reduce((s,v)=>s+v*v,0)/((to-from)*44100));
+   let crossings=0;for(let i=2205;i<6174;i++)if(audio[i-1]<0 && audio[i]>=0)crossings++;
+   renders.push({hz,first:rms(.02,.19),second:rms(.24,.38),silence:rms(.5,.9),peak:Math.max(...audio.map(Math.abs)),crossings});
+  }
+  return renders;
+ });
+ for(const r of result){expect(r.first).toBeGreaterThan(.15);expect(r.second).toBeGreaterThan(.1);expect(r.silence).toBe(0);expect(r.peak).toBeLessThanOrEqual(1);}
+ expect(result[3].crossings).toBeGreaterThan(result[0].crossings*4);
+});
+
+test('heartbeat is opt-in on start and stops on pause, mode change, hide and completion',async({page})=>{
+ await page.addInitScript(()=>{
+  window.heartbeatAudit={started:0,stopped:0};
+  const original=AudioContext.prototype.createOscillator;
+  AudioContext.prototype.createOscillator=function(){const oscillator=original.call(this);const start=oscillator.start.bind(oscillator),stop=oscillator.stop.bind(oscillator);
+   oscillator.start=(...args)=>{window.heartbeatAudit.started++;return start(...args)};
+   oscillator.stop=(...args)=>{if(!args.length)window.heartbeatAudit.stopped++;return stop(...args)};
+   return oscillator;
+  };
+ });
+ await page.goto('./sensory.html');
+ expect(await page.evaluate(()=>window.heartbeatAudit.started)).toBe(0);
+ await page.locator('#start').click();
+ await expect.poll(()=>page.evaluate(()=>window.heartbeatAudit.started)).toBeGreaterThan(0);
+ await page.locator('[data-heartbeat-hz="160"]').click();
+ await expect(page.locator('#heartbeat-hz-value')).toHaveText('160 Hz');
+ await page.locator('#heartbeat-volume').fill('50');await expect(page.locator('#heartbeat-volume-value')).toHaveText('50%');
+ await page.locator('#start').click();
+ expect(await page.evaluate(()=>window.heartbeatAudit.stopped)).toBeGreaterThan(0);
+ const paused=await page.evaluate(()=>window.heartbeatAudit.started);await page.waitForTimeout(400);expect(await page.evaluate(()=>window.heartbeatAudit.started)).toBe(paused);
+ await page.locator('#start').click();await page.locator('.chooser button').nth(3).click();
+ const changed=await page.evaluate(()=>window.heartbeatAudit.started);await page.waitForTimeout(400);expect(await page.evaluate(()=>window.heartbeatAudit.started)).toBe(changed);
+ await page.locator('.chooser button').first().click();await page.locator('#heartbeat-sound').uncheck();await page.locator('#start').click();
+ await page.waitForTimeout(300);expect(await page.evaluate(()=>window.heartbeatAudit.started)).toBe(changed);
+ await page.locator('#heartbeat-sound').check();await expect.poll(()=>page.evaluate(()=>window.heartbeatAudit.started)).toBeGreaterThan(changed);
+ await page.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,value:true});document.dispatchEvent(new Event('visibilitychange'));});
+ await expect(page.locator('#status')).toHaveText('PAUSED');
+ const hidden=await page.evaluate(()=>window.heartbeatAudit.started);await page.waitForTimeout(300);expect(await page.evaluate(()=>window.heartbeatAudit.started)).toBe(hidden);
+ await page.evaluate(()=>Object.defineProperty(document,'hidden',{configurable:true,value:false}));
+ await page.clock.install();await page.locator('#start').click();await page.clock.fastForward(61000);await expect(page.locator('#status')).toHaveText('60 SEC COMPLETE');
+ await page.locator('#start').click();await page.clock.runFor(100);await expect(page.locator('#start')).toHaveText('STOP');await page.locator('#start').click();
+});
