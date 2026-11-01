@@ -7,7 +7,7 @@ const studies=[
 {title:"MUSIC",sub:"528 Hz / HARMONICS",desc:"528Hzと倍音を重ねた音色の実験。",detail:"期待される体験：穏やかな気分やストレス軽減。研究状況：小規模研究はありますが、528Hz固有の健康効果は未確立。仕組み：528Hzを中心に1056Hz・1584Hzの倍音と264Hzを重ねます。528Hzはソルフェジオ周波数として知られますが、固有の治療効果は確立していません。",type:"harmonics",freq:528}
 ];
 const root=document.getElementById("tracks");let ctx=null,active=null,raf=0;
-const lengths=[1,2,3,5,10,15,20,30,45,60];
+const lengths=[1,2,3,4,5,10,15,20,30,45,60];
 const fmt=s=>String(Math.floor(s/60)).padStart(2,"0")+":"+String(Math.floor(s%60)).padStart(2,"0");
 studies.forEach((s,i)=>{const el=document.createElement("article");el.className="track";el.innerHTML='<small>'+String(i+1).padStart(2,"0")+' / '+s.sub+'</small><h2>'+s.title+'</h2><p>'+s.desc+'</p><p class="detail">'+s.detail+'</p><div class="controls"><label>長さ <select class="length" aria-label="再生時間">'+lengths.map(n=>'<option value="'+n+'" '+(n===1?'selected':'')+'>'+n+'分</option>').join("")+'</select></label><label><input type="checkbox" class="repeat"> リピート</label></div><button type="button" aria-label="'+s.title+'を再生">PLAY</button><div class="progress"><span></span></div><small class="time">01:00</small>';root.append(el);el.querySelector("button").onclick=()=>play(i,el);el.querySelector(".length").onchange=()=>{if(active&&active.i===i)stop();el.querySelector(".time").textContent=fmt(Number(el.querySelector(".length").value)*60)}});
 function stop(){cancelAnimationFrame(raf);if(active){const a=active;active=null;try{a.nodes.forEach(n=>n.stop())}catch(e){}try{a.master.disconnect()}catch(e){}a.button.textContent="PLAY";a.button.classList.remove("active");a.bar.style.width="0%";a.time.textContent=fmt(Number(a.el.querySelector(".length").value)*60)}}
