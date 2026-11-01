@@ -47,13 +47,13 @@ function play(i,el){
  }
  function base(){
   const v=s.type==="binaural"?.12:.10;
-  if(s.type==="binaural"){sound(s.freq,now,duration+.1,v,"sine",-1);sound(s.freq+s.diff,now,duration+.1,v,"sine",1)}
-  else if(s.type==="drone"){sound(55,now,duration+.1,.09);sound(110,now,duration+.1,.035);sound(82.41,now,duration+.1,.025)}
-  else {sound(s.freq,now,duration+.1,.055);if(s.type==="harmonics")sound(1056,now,duration+.1,.015)}
+  if(s.type==="binaural"){sound(s.freq,now,3601,v,"sine",-1);sound(s.freq+s.diff,now,duration+.1,v,"sine",1)}
+  else if(s.type==="drone"){sound(55,now,3601,.09);sound(110,now,3601,.035);sound(82.41,now,3601,.025)}
+  else {sound(s.freq,now,3601,.055);if(s.type==="harmonics")sound(1056,now,3601,.015)}
  }
  // For repeating sessions, the continuous carrier is restarted at each session boundary.
  base();
- const tempo={ambient:80,techno:120,chiptune:150,lofi:88,house:120,minimal:120}[genre]||120;
+ const tempo={ambient:80,techno:120,chiptune:150,lofi:100,house:120,minimal:120}[genre]||120;
  const stepDur=60/tempo/4;
  const rootMidi=[48,45,41,43][i%4];
  const tuning=s.type==="pure"?432:s.type==="harmonics"?528:440;
@@ -85,7 +85,7 @@ function play(i,el){
  function schedule(){
   if(active!==a)return;
   const limit=ctx.currentTime+.18;
-  while(a.next<limit&&a.next<a.start+duration+.01){
+  while(a.next<limit&&(el.querySelector(".repeat").checked||a.next<a.start+duration+.01)){
    if(a.next>=a.start)tick(a.step,a.next);
    a.step++;a.next=a.start+a.step*stepDur;
   }
@@ -94,15 +94,9 @@ function play(i,el){
  function frame(){
   if(active!==a)return;
   const elapsed=Math.max(0,ctx.currentTime-a.start);
-  if(elapsed>=duration){
-   if(el.querySelector(".repeat").checked){
-    // restart exactly at boundary; next cycle is scheduled from the new session start
-    const over=elapsed%duration;
-    a.start=ctx.currentTime-over;a.step=0;a.next=a.start;
-    // continuous carrier remains audible throughout repeat
-   }else{stop();a.button.textContent="REPLAY";return}
-  }
-  const e=Math.max(0,ctx.currentTime-a.start);
+  const repeat=el.querySelector(".repeat").checked;
+  if(elapsed>=duration&&!repeat){stop();a.button.textContent="REPLAY";return}
+  const e=repeat?elapsed%duration:elapsed;
   a.bar.style.width=Math.min(100,e/duration*100)+"%";a.time.textContent=fmt(Math.max(0,Math.ceil(duration-e)));
   a.raf=requestAnimationFrame(frame);
  }frame();
