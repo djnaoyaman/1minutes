@@ -9,7 +9,7 @@ const studies=[
 const root=document.getElementById("tracks");
 const lengths=[1,2,3,4,5,10,15,20,30,45,60];
 const genres=[
-["pure","周波数のみ"],["ambient","AMBIENT"],["techno","TECHNO"],["chiptune","8-BIT"],["lofi","LO-FI HIP HOP"],["house","DEEP HOUSE"],["minimal","MINIMAL"]
+["pure","周波数のみ"],["organ","PIPE ORGAN"],["violin","VIOLIN"],["piano","PIANO"],["chiptune","8-BIT"],["techno","TECHNO"],["ambient","AMBIENT"],["lofi","LO-FI HIP HOP"],["house","DEEP HOUSE"]
 ];
 const fmt=s=>String(Math.floor(s/60)).padStart(2,"0")+":"+String(Math.floor(s%60)).padStart(2,"0");
 let ctx=null,active=null;
@@ -53,7 +53,7 @@ function play(i,el){
  }
  // For repeating sessions, the continuous carrier is restarted at each session boundary.
  base();
- const tempo={ambient:80,techno:120,chiptune:150,lofi:100,house:120,minimal:120}[genre]||120;
+ const tempo={organ:80,violin:80,piano:100,ambient:80,techno:120,chiptune:150,lofi:100,house:120}[genre]||120;
  const stepDur=60/tempo/4;
  const rootMidi=[48,45,41,43][i%4];
  const tuning=s.type==="pure"?432:s.type==="harmonics"?528:440;
@@ -63,9 +63,9 @@ function play(i,el){
   if(genre==="pure")return;
   const st=step%16,bar=Math.floor(step/16),rootNote=rootMidi+[0,-2,-5,-2][bar%4];
   const melodic=[0,2,4,5,7,5,4,2,3,5,7,4,2,3,1,0][(st+bar%4)%16];
-  if(genre==="ambient"){
-   if(st===0){sound(pitch(rootNote+12),t,Math.min(3.8,stepDur*15),.065,"sine",-.25);sound(pitch(rootNote+19),t,Math.min(3.8,stepDur*15),.035,"sine",.3)}
-   if(st%8===4)sound(pitch(rootNote+24+scale[melodic%8]),t,stepDur*7,.028,"sine",.2);
+  if(genre==="ambient"||genre==="organ"||genre==="violin"||genre==="piano"){
+   if(st===0){const kind=genre==="organ"?"sawtooth":genre==="violin"?"sawtooth":genre==="piano"?"triangle":"sine";const level=genre==="organ"?.032:genre==="violin"?.022:.065;sound(pitch(rootNote+12),t,Math.min(3.8,stepDur*15),level,kind,-.25);sound(pitch(rootNote+19),t,Math.min(3.8,stepDur*15),level*.5,kind,.3)}
+   if(genre==="piano"&&st%4===0)sound(pitch(rootNote+24+scale[melodic%8]),t,stepDur*3,.048,"triangle",.2);else if(genre==="violin"&&st%4===0)sound(pitch(rootNote+24+scale[melodic%8]),t,stepDur*4,.018,"sawtooth",.2);else if(st%8===4)sound(pitch(rootNote+24+scale[melodic%8]),t,stepDur*7,.028,genre==="organ"?"sine":"sine",.2);
   }else{
    if(st%4===0&&(genre==="techno"||genre==="house"||genre==="minimal")){
     sound(58,t,.13,.18,"sine");sound(41,t,.18,.08,"triangle");
@@ -74,9 +74,9 @@ function play(i,el){
     sound(170,t,.055,.035,"triangle");
    }
    if(st%2===0&&genre!=="minimal")sound(1800,t,.025,.012,"square",st%4===0?-.35:.35);
-   if(st%4===0||genre==="chiptune"&&st%2===0||genre==="minimal"&&st%8===0)
+   if(st%4===0||genre==="chiptune"&&st%2===0)
     sound(pitch(rootNote),t,stepDur*(genre==="ambient"?3:2.4),.075,genre==="chiptune"?"triangle":"sine",-.15);
-   const playLead=genre==="chiptune"||genre==="techno"&&st%2===0||genre==="house"&&st%4===3||genre==="lofi"&&st%4===0||genre==="minimal"&&st%8===6;
+   const playLead=genre==="chiptune"||genre==="techno"&&st%2===0||genre==="house"&&st%4===3||genre==="lofi"&&st%4===0;
    if(playLead)sound(pitch(rootNote+24+scale[melodic%8]),t,stepDur*(genre==="chiptune"?.85:2.5),genre==="chiptune"?.06:.035,genre==="chiptune"?"square":"triangle",.25);
   }
  }
