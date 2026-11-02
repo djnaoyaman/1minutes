@@ -2,7 +2,7 @@ import {readFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {pathToFileURL} from 'node:url';
 export const MIN_REQUEST_GAP_MS=65000;
-export const PUBLIC_FILES=['index.html','app.js','core.js','stages.js','experiments.js','style.css','research.json','icons.js','assets/brand-reverse.svg','assets/favicon.svg','assets/og.png','assets/apple-touch-icon.png'];
+export const PUBLIC_FILES=['index.html','app.js','core.js','stages.js','experiments.js','style.css','research.json','icons.js','assets/brand-reverse.svg','assets/favicon.svg','assets/og.png','assets/apple-touch-icon.png','frequency.html','breath.html','sensory.html','share-page.js','share-page.css'];
 const hash=b=>createHash('sha256').update(b).digest('hex');
 // No parallel public requests. Browser interaction coverage runs against localhost
 // in the PR workflow; this stage establishes exact published asset bytes.
