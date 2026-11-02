@@ -1,0 +1,14 @@
+/* Scoped to the quiet, page-specific sharing area below each exhibition. */
+.page-share{border-top:1px solid #444;margin-top:40px;padding:28px 0 12px;max-width:760px;text-align:left}
+.page-share h2{font-size:20px;font-weight:400;letter-spacing:0;margin:0 0 12px}
+.page-share p{font-size:13px;line-height:1.7;color:#bbb;margin:10px 0}
+.page-share-actions{display:flex;flex-wrap:wrap;gap:10px}
+.page-share button{min-height:44px;padding:10px 18px;background:transparent;color:#f4f2ed;border:1px solid #777;border-radius:24px;font:inherit;font-size:14px;cursor:pointer}
+.page-share button[aria-disabled="true"]{cursor:progress;opacity:.65}
+.page-share button:disabled{cursor:not-allowed;opacity:.65}
+.page-share :is(button,summary,input):focus-visible{outline:2px solid #f4f2ed;outline-offset:4px}
+.page-share [data-share-status]{min-height:1.7em;margin-bottom:10px}
+.page-share summary{width:fit-content;max-width:100%;min-height:44px;padding:10px 0;font-size:13px;cursor:pointer}
+.page-share label{display:block;font-size:13px;margin:4px 0 8px}
+.page-share input{display:block;width:100%;min-width:0;min-height:44px;box-sizing:border-box;padding:10px;background:#18191c;color:#f4f2ed;border:1px solid #777;border-radius:4px;font:inherit;font-size:16px}
+.page-share details p{margin-bottom:0}
