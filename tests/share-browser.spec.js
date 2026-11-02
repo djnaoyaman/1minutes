@@ -19,11 +19,11 @@ for(const [key,label,url] of pages)test(`${key} shares only its public canonical
 });
 test('native busy double click and copy overlap are ignored, then retry works',async({page})=>{
  await setup(page,{share:'pending'});await page.goto('./');const share=page.locator('[data-share-native]'),copy=page.locator('[data-share-copy]');
- await share.evaluate(el=>{el.click();el.click();});await copy.click();await expect(share).toHaveAttribute('aria-disabled','true');expect(await page.evaluate(()=>[shareAudit.shares.length,shareAudit.copies.length])).toEqual([1,0]);
+ await share.evaluate(el=>{el.click();el.click();});await copy.evaluate(el=>el.click());await expect(share).toHaveAttribute('aria-disabled','true');expect(await page.evaluate(()=>[shareAudit.shares.length,shareAudit.copies.length])).toEqual([1,0]);
  await page.evaluate(()=>resolveShare());await expect(share).toHaveAttribute('aria-disabled','false');await copy.click();await expect(page.locator('[data-share-status]')).toHaveText('URLをコピーしました。');expect(await page.evaluate(()=>shareAudit.copies.length)).toBe(1);
 });
 test('clipboard busy repeat and later completion reset correctly',async({page})=>{
- await setup(page,{copy:'pending'});await page.goto('./breath.html');const copy=page.locator('[data-share-copy]');await copy.evaluate(el=>{el.click();el.click();});await page.locator('[data-share-native]').click();expect(await page.evaluate(()=>[shareAudit.copies.length,shareAudit.shares.length])).toEqual([1,0]);await page.evaluate(()=>resolveCopy());await expect(copy).toHaveAttribute('aria-disabled','false');await expect(page.locator('[data-share-status]')).toHaveText('URLをコピーしました。');
+ await setup(page,{copy:'pending'});await page.goto('./breath.html');const copy=page.locator('[data-share-copy]');await copy.evaluate(el=>{el.click();el.click();});await page.locator('[data-share-native]').evaluate(el=>el.click());expect(await page.evaluate(()=>[shareAudit.copies.length,shareAudit.shares.length])).toEqual([1,0]);await page.evaluate(()=>resolveCopy());await expect(copy).toHaveAttribute('aria-disabled','false');await expect(page.locator('[data-share-status]')).toHaveText('URLをコピーしました。');
 });
 test('native cancel resets without reporting success or invoking clipboard',async({page})=>{
  await setup(page,{share:'abort'});await page.goto('./');await page.locator('[data-share-native]').click();await expect(page.locator('[data-share-status]')).toHaveText('共有をキャンセルしました。');expect(await page.evaluate(()=>shareAudit.copies)).toEqual([]);await expect(page.locator('[data-share-manual]')).not.toHaveAttribute('open','');await page.evaluate(()=>window.shareMode='success');await page.locator('[data-share-native]').click();await expect(page.locator('[data-share-status]')).toHaveText('共有操作が完了しました。');
