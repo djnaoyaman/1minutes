@@ -50,7 +50,41 @@ const atlasData={"478":["アンドルー・ワイル医師が普及","4秒吸い
 const atlas=document.getElementById("breath-atlas");
 if(atlas){for(const [key,values] of Object.entries(atlasData)){const m=methods[key];const article=document.createElement("article");article.style.cssText="padding:22px 0;border-top:1px solid #444";const heading=document.createElement("h3");heading.textContent=m.name;heading.style.fontWeight="500";article.dataset.method=key;article.append(heading);for(const [label,value] of [["由来・提唱者",values[0]],["どんな呼吸法か",values[1]],["提唱者・伝統の考え方",values[2]],["実践者の受け止め方",values[3]]]){const p=document.createElement("p");const strong=document.createElement("strong");strong.textContent=label+" — ";p.append(strong,document.createTextNode(value));article.append(p)}atlas.append(article)}}
 
-function updateSelectedExplanation(){const article=atlas.querySelector(`[data-method="${method.value}"]`);const target=$("selected-method-atlas");target.replaceChildren(...Array.from(article.querySelectorAll("p"),p=>p.cloneNode(true)));}
+function updateSelectedExplanation(){const article=atlas.querySelector(`[data-method="${method.value}"]`);const target=$("selected-method-atlas");target.replaceChildren(...Array.from(article.querySelectorAll("p"),p=>p.cloneNode(true)));$("methodPrevious").disabled=method.selectedIndex===0;$("methodNext").disabled=method.selectedIndex===method.options.length-1;$("methodPosition").textContent=`${method.selectedIndex+1} / ${method.options.length}`;}
 method.addEventListener("change",updateSelectedExplanation);
 updateSelectedExplanation();
 window.addEventListener("pageshow",()=>{updateMethod();updateSelectedExplanation()});
+
+// Keep all selection paths on the existing change handler, including timer reset.
+function moveMethod(direction){
+ const next=method.selectedIndex+direction;
+ if(next<0||next>=method.options.length)return;
+ method.selectedIndex=next;
+ method.dispatchEvent(new Event("change",{bubbles:true}));
+}
+$("methodPrevious").addEventListener("click",()=>moveMethod(-1));
+$("methodNext").addEventListener("click",()=>moveMethod(1));
+const explanation=document.querySelector(".method-explanation");
+let swipe=null;
+explanation.addEventListener("pointerdown",event=>{
+ if(event.pointerType!=="touch")return;
+ if(!event.isPrimary){swipe=null;return;}
+ if(event.target.closest("button,a,input,select,textarea,label,summary"))return;
+ swipe={id:event.pointerId,x:event.clientX,y:event.clientY,time:event.timeStamp};
+ explanation.setPointerCapture(event.pointerId);
+});
+explanation.addEventListener("pointermove",event=>{
+ if(!swipe||event.pointerId!==swipe.id)return;
+ const dx=Math.abs(event.clientX-swipe.x),dy=Math.abs(event.clientY-swipe.y);
+ // Once the user starts scrolling vertically, never reinterpret it as a swipe.
+ if(dy>12&&dy>dx/2)swipe=null;
+});
+explanation.addEventListener("pointerup",event=>{
+ if(!swipe||event.pointerId!==swipe.id)return;
+ const gesture=swipe;swipe=null;
+ const dx=event.clientX-gesture.x,dy=event.clientY-gesture.y;
+ if(Math.abs(dx)<48||Math.abs(dx)<Math.abs(dy)*2||event.timeStamp-gesture.time>800)return;
+ if(!window.getSelection().isCollapsed)return;
+ moveMethod(dx<0?1:-1);
+});
+for(const type of ["pointercancel","lostpointercapture"])explanation.addEventListener(type,()=>{swipe=null});
