@@ -46,9 +46,9 @@ test('keyboard selection, timer controls, completion and learning-only methods',
   await expect(page.locator('#phase')).toHaveText('READY');
   await start.click();await page.clock.runFor(1500);await page.locator('#reset').click();
   await expect(page.locator('#progress')).toHaveAttribute('style','width: 0%;');
-  await start.click();await page.clock.runFor(60100);
+  await start.click();await page.clock.fastForward(60100);
   await expect(page.locator('#phase')).toHaveText('COMPLETE');
-  await page.locator('#repeat').check();await start.click();await page.clock.runFor(60100);
+  await page.locator('#repeat').check();await start.click();await page.clock.fastForward(60100);
   await expect(start).toHaveText('STOP');await page.locator('#reset').click();
   for(const key of ['wimhof','kapalabhati','bhastrika','tummo']){
     await selector.selectOption(key);await expect(start).toBeDisabled();
