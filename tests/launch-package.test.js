@@ -8,7 +8,14 @@ test('canonical and structured data describe user stopped twelve experiments',()
  assert.equal(schema.url,'https://djnaoyaman.github.io/1minutes/');
  assert.match(schema.description,/自分で止め/);
  assert.match(html,/rel="canonical" href="https:\/\/djnaoyaman.github.io\/1minutes\/"/);
- assert.doesNotMatch(html,/googletagmanager|google-analytics/);
+ for(const page of ['index.html','breath.html','frequency.html','sensory.html']){
+  const source=read(page);
+  const loaders=[...source.matchAll(/https:\/\/www\.googletagmanager\.com\/gtag\/js\?id=([^"'\s<]+)/g)].map(match=>match[1]);
+  assert.deepEqual(loaders,['G-L3X8XHP35G']);
+  const configs=[...source.matchAll(/gtag\(['"]config['"],\s*['"]([^'"]+)['"]/g)].map(match=>match[1]);
+  assert.deepEqual(configs,['G-L3X8XHP35G']);
+  assert.equal((source.match(/src="\.\/analytics-events\.js\?[^"\s]+"/g)||[]).length,1);
+ }
 });
 test('manifest paths remain inside project and PNG dimensions match',()=>{
  const m=JSON.parse(read('site.webmanifest'));
@@ -32,3 +39,4 @@ test('LLM notes disclose measurement and storage limitations',()=>{
  for(const name of ['WAIT','FLOW','ANTICIPATION','COUNT','OVERLOAD','STILLNESS','MEMORY','CHOICE','REPETITION','NOVELTY','RHYTHM','SYNCHRONY']) assert.ok(txt.includes(name));
  assert.match(txt,/自動終了せず/);assert.match(txt,/240/);assert.match(txt,/診断|判定しません/);
 });
+

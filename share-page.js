@@ -43,14 +43,20 @@ export function mountSharePanel(root, { nav = navigator, lifecycle = window } = 
           return;
         }
         await nav.share({ title: page.title, url: page.url });
-        if (id === operation) status.textContent = '共有操作が完了しました。';
+        if (id === operation) {
+          status.textContent = '共有操作が完了しました。';
+          if (typeof window !== 'undefined') window.trackOneMinute?.('share', {method:'native', content_type:'exhibition', item_id:root.dataset.sharePage});
+        }
       } else {
         if (typeof nav.clipboard?.writeText !== 'function') {
           fallback('自動コピーを利用できません。下のURLを選択してコピーしてください。');
           return;
         }
         await nav.clipboard.writeText(page.url);
-        if (id === operation) status.textContent = 'URLをコピーしました。';
+        if (id === operation) {
+          status.textContent = 'URLをコピーしました。';
+          if (typeof window !== 'undefined') window.trackOneMinute?.('share', {method:'copy_link', content_type:'exhibition', item_id:root.dataset.sharePage});
+        }
       }
     } catch (error) {
       if (id !== operation) return;
@@ -76,3 +82,4 @@ export function mountSharePanel(root, { nav = navigator, lifecycle = window } = 
 if (typeof document !== 'undefined') {
   for (const root of document.querySelectorAll('[data-share-page]')) mountSharePanel(root);
 }
+

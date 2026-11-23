@@ -12,10 +12,11 @@ const modes=[
 ["RIPPLE","波紋を、つくる。画面をタップして波を重ねます。",["波の速さ",6,2,12]],
 ["RHYTHM","リズムに、支配される。光に合わせてタップします。",["BPM",120,40,200]]
 ];
-const $=x=>document.getElementById(x),cv=$("canvas"),g=cv.getContext("2d");let index=0,running=false,begin=0,elapsed=0,raf=0,ripples=[],errors=[];
+const $=x=>document.getElementById(x),cv=$("canvas"),g=cv.getContext("2d");let sessionStarted=false;
+let index=0,running=false,begin=0,elapsed=0,raf=0,ripples=[],errors=[];
 const W=()=>cv.clientWidth,H=()=>cv.clientHeight,V=()=>Number($("parameter").value);
 function resize(){let d=Math.min(devicePixelRatio||1,2);cv.width=W()*d;cv.height=H()*d;g.setTransform(d,0,0,d,0,0)}
-function select(i){stopSession();index=i;running=false;elapsed=0;ripples=[];errors=[];const m=modes[i];$("number").textContent=String(i+1).padStart(2,"0")+" / 08";$("name").textContent=m[0];$("desc").textContent=m[1];$("controls").innerHTML='<label>'+m[2][0]+' <output id="value">'+m[2][1]+'</output><input id="parameter" type="range" value="'+m[2][1]+'" min="'+m[2][2]+'" max="'+m[2][3]+'"></label>';$("parameter").oninput=()=>{$("value").textContent=V();restartHeartbeat();draw(elapsed)};if(i===0)renderSoundControls();document.querySelectorAll(".chooser button").forEach((b,n)=>b.setAttribute("aria-pressed",String(n===i)));$("start").textContent="START 60 SEC";$("status").textContent="READY";$("bar").style.width="0%";draw(0)}
+function select(i){stopSession();sessionStarted=false;index=i;running=false;elapsed=0;ripples=[];errors=[];const m=modes[i];$("number").textContent=String(i+1).padStart(2,"0")+" / 08";$("name").textContent=m[0];$("desc").textContent=m[1];$("controls").innerHTML='<label>'+m[2][0]+' <output id="value">'+m[2][1]+'</output><input id="parameter" type="range" value="'+m[2][1]+'" min="'+m[2][2]+'" max="'+m[2][3]+'"></label>';$("parameter").oninput=()=>{$("value").textContent=V();restartHeartbeat();draw(elapsed)};if(i===0)renderSoundControls();document.querySelectorAll(".chooser button").forEach((b,n)=>b.setAttribute("aria-pressed",String(n===i)));$("start").textContent="START 60 SEC";$("status").textContent="READY";$("bar").style.width="0%";draw(0)}
 modes.forEach((m,i)=>{let b=document.createElement("button");if(m[0]==="RIPPLE")b.id="ripple";b.textContent=String(i+1).padStart(2,"0")+" "+m[0];b.onclick=()=>select(i);$("chooser").append(b)});
 // Fragment navigation only moves attention; selection and playback stay user-controlled.
 function focusRippleFragment(){
@@ -25,6 +26,7 @@ function focusRippleFragment(){
  button.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth',block:'center'});
 }
 window.addEventListener('hashchange',focusRippleFragment);
+function trackSessionStart(){if(sessionStarted)return;sessionStarted=true;window.trackOneMinute?.('experience_start',{experience_type:'sensory',content_id:'sensory_'+index});}
 function stopSession(){running=false;cancelAnimationFrame(raf);heartbeat.stop()}
 function restartHeartbeat(){
  heartbeat.stop();
@@ -49,14 +51,14 @@ function renderSoundControls(){
 }
 $('start').onclick=()=>{
  if(running){stopSession();$('start').textContent='RESUME';$('status').textContent='PAUSED';return}
- if(elapsed>=60)elapsed=0;
- running=true;begin=performance.now()-elapsed*1000;$('start').textContent='STOP';restartHeartbeat();raf=requestAnimationFrame(frame)
+ if(elapsed>=60){elapsed=0;sessionStarted=false;}
+ running=true;begin=performance.now()-elapsed*1000;$('start').textContent='STOP';restartHeartbeat();trackSessionStart();raf=requestAnimationFrame(frame)
 };
 window.addEventListener('pagehide',stopSession);
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&running){stopSession();$('start').textContent='RESUME';$('status').textContent='PAUSED'}});
 $("save").onclick=()=>{let a=document.createElement("a");a.download="1minutes-"+modes[index][0].toLowerCase()+".png";a.href=cv.toDataURL("image/png");a.click()};
-$("stage").onpointerdown=e=>{const r=cv.getBoundingClientRect();if(index===6){ripples.push([e.clientX-r.left,e.clientY-r.top,performance.now()/1000]);if(!running){running=true;begin=performance.now();$("start").textContent="STOP";raf=requestAnimationFrame(frame)}}if(index===7&&running){let beat=60/V(),actual=(performance.now()-begin)/1000,off=(actual-Math.round(actual/beat)*beat)*1000;errors.push(off);$("status").textContent="差 "+Math.round(off)+"ms / 平均 "+Math.round(errors.reduce((a,b)=>a+Math.abs(b),0)/errors.length)+"ms"}draw(elapsed)};
-function frame(now){if(!running)return;elapsed=Math.min(60,(now-begin)/1000);$("bar").style.width=elapsed/60*100+"%";if(index!==7)$("status").textContent=(60-elapsed).toFixed(1)+" SEC";draw(elapsed);if(elapsed>=60){stopSession();$("start").textContent="REPLAY";$("status").textContent="60 SEC COMPLETE"}else raf=requestAnimationFrame(frame)}
+$("stage").onpointerdown=e=>{const r=cv.getBoundingClientRect();if(index===6){ripples.push([e.clientX-r.left,e.clientY-r.top,performance.now()/1000]);if(!running){if(elapsed>=60){elapsed=0;sessionStarted=false;}running=true;begin=performance.now()-elapsed*1000;$("start").textContent="STOP";trackSessionStart();raf=requestAnimationFrame(frame)}}if(index===7&&running){let beat=60/V(),actual=(performance.now()-begin)/1000,off=(actual-Math.round(actual/beat)*beat)*1000;errors.push(off);$("status").textContent="差 "+Math.round(off)+"ms / 平均 "+Math.round(errors.reduce((a,b)=>a+Math.abs(b),0)/errors.length)+"ms"}draw(elapsed)};
+function frame(now){if(!running)return;elapsed=Math.min(60,(now-begin)/1000);$("bar").style.width=elapsed/60*100+"%";if(index!==7)$("status").textContent=(60-elapsed).toFixed(1)+" SEC";draw(elapsed);if(elapsed>=60){window.trackOneMinute?.('experience_complete',{experience_type:'sensory',content_id:'sensory_'+index});stopSession();$("start").textContent="REPLAY";$("status").textContent="60 SEC COMPLETE"}else raf=requestAnimationFrame(frame)}
 function draw(t){let w=W(),h=H(),x=w/2,y=h/2;g.clearRect(0,0,w,h);g.fillStyle="#0b1218";g.fillRect(0,0,w,h);let v=V();
 if(index===0){let phase=t%(60/v),pulse=Math.max(Math.exp(-Math.pow(phase/.065,2)),.72*Math.exp(-Math.pow((phase-.22)/.055,2)));let r=Math.min(w,h)*(.2+.08*pulse);g.shadowBlur=55;g.shadowColor="#e8798d";g.strokeStyle="#f4a3ae";g.lineWidth=3+pulse*5;g.beginPath();g.arc(x,y,r,0,7);g.stroke();g.shadowBlur=0;g.fillStyle="white";g.textAlign="center";g.font="32px sans-serif";g.fillText(v+" BPM",x,y+10)}
 if(index===1){let n=v,sz=w/n;for(let j=0;j<Math.ceil(h/sz);j++)for(let i=0;i<n;i++){g.fillStyle=(i+j)%2?"#e6e6e6":"#181818";g.fillRect(i*sz,j*sz,sz,sz);g.strokeStyle=(i+j)%2?"#718f9a":"#e8aab0";g.lineWidth=2;g.beginPath();g.arc((i+.5)*sz,(j+.5)*sz,sz*.21,0,Math.PI);g.stroke()}}
@@ -103,3 +105,4 @@ if(index===7){let p=(t*V()/60)%1,r=Math.min(w,h)*(.14+.06*Math.exp(-p*18));g.str
 }
 window.addEventListener("resize",()=>{resize();draw(elapsed)});resize();select(0);
 focusRippleFragment();
+

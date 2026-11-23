@@ -17,6 +17,7 @@ tummo:{name:"TUMMO / トゥンモ",desc:"学習モード。チベット仏教に
 };
 Object.assign(methods,additionalMethods);
 const $=id=>document.getElementById(id),method=$("method"),length=$("length"),start=$("start"),orb=$("orb"),phase=$("phase"),count=$("count"),music=$("music");
+let analyticsComplete=false;
 let running=false,origin=0,raf=0,ctx=null,nodes=[],audioTimer=0,audioStep=0,nextAudio=0;
 const fmt=n=>String(Math.floor(n/60)).padStart(2,"0")+":"+String(Math.ceil(n%60)).padStart(2,"0");
 function updateMethod(){const m=methods[method.value];start.disabled=!!m.educational;start.title=m.educational?"学習専用。自動誘導は提供していません。":"";$("methodTitle").textContent=m.name;$("description").textContent=m.desc;if(!running)count.textContent=fmt(Number(length.value)*60)}
@@ -39,8 +40,8 @@ function startAudio(){
 }
 function reset(){running=false;cancelAnimationFrame(raf);stopAudio();start.textContent="START";phase.textContent="READY";orb.style.transform="scale(1)";orb.style.background="radial-gradient(circle at 38% 35%,#d9e5e4,#70969d 55%,#3c5763)";$("progress").style.width="0%";$("remaining").textContent="残り "+fmt(Number(length.value)*60);count.textContent=fmt(Number(length.value)*60)}
 $("reset").onclick=reset;
-start.onclick=()=>{if(running){reset();return}running=true;origin=performance.now();start.textContent="STOP";if(music.checked)startAudio();frame()};
-function frame(){if(!running)return;const duration=Number(length.value)*60,elapsed=(performance.now()-origin)/1000,repeat=$("repeat").checked;if(elapsed>=duration&&!repeat){reset();phase.textContent="COMPLETE";count.textContent="00:00";$("remaining").textContent="完了";$("progress").style.width="100%";return}
+start.onclick=()=>{if(running){reset();return}running=true;analyticsComplete=false;origin=performance.now();start.textContent="STOP";if(music.checked)startAudio();frame();window.trackOneMinute?.('experience_start',{experience_type:'breath',content_id:'breath'})};
+function frame(){if(!running)return;const duration=Number(length.value)*60,elapsed=(performance.now()-origin)/1000,repeat=$("repeat").checked;if(elapsed>=duration&&!analyticsComplete){analyticsComplete=true;window.trackOneMinute?.('experience_complete',{experience_type:'breath',content_id:'breath'})}if(elapsed>=duration&&!repeat){reset();phase.textContent="COMPLETE";count.textContent="00:00";$("remaining").textContent="完了";$("progress").style.width="100%";return}
  const t=repeat?elapsed%duration:elapsed;const m=methods[method.value];const cycle=m.steps.reduce((sum,x)=>sum+x[1],0);let within=t%cycle,idx=0;while(within>=m.steps[idx][1]){within-=m.steps[idx][1];idx++}
  const [name,span]=m.steps[idx],p=within/span;
  let scale=1;if(name==="吸う")scale=.75+.85*(p*p*(3-2*p));else if(name==="吐く")scale=1.6-.85*(p*p*(3-2*p));else scale=idx>0&&m.steps[idx-1][0]==="吸う"?1.6:.75;
@@ -88,3 +89,4 @@ explanation.addEventListener("pointerup",event=>{
  moveMethod(dx<0?1:-1);
 });
 for(const type of ["pointercancel","lostpointercapture"])explanation.addEventListener(type,()=>{swipe=null});
+
