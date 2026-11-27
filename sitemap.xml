@@ -1,2 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>https://djnaoyaman.github.io/1minutes/</loc></url></urlset>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://djnaoyaman.github.io/1minutes/</loc></url>
+  <url><loc>https://djnaoyaman.github.io/1minutes/breath.html</loc></url>
+  <url><loc>https://djnaoyaman.github.io/1minutes/frequency.html</loc></url>
+  <url><loc>https://djnaoyaman.github.io/1minutes/sensory.html</loc></url>
+</urlset>
