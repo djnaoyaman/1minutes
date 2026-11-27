@@ -32,7 +32,19 @@ test('404 uses root anchored recovery and is excluded from sitemap',()=>{
  assert.match(f,/href="\/1minutes\/"/);
  assert.doesNotMatch(f,/href="\.\//);
  assert.doesNotMatch(read('sitemap.xml'),/404/);
- assert.equal([...read('sitemap.xml').matchAll(/<loc>/g)].length,1);
+});
+test('sitemap lists every public exhibit exactly once at its canonical URL',()=>{
+ const base='https://djnaoyaman.github.io/1minutes/';
+ const map=read('sitemap.xml');
+ assert.match(map,/<urlset xmlns="http:\/\/www\.sitemaps\.org\/schemas\/sitemap\/0\.9">/);
+ const routes=['','breath.html','frequency.html','sensory.html'];
+ const locations=[...map.matchAll(/<loc>([^<]+)<\/loc>/g)].map(([,url])=>url);
+ assert.deepEqual(locations,routes.map(route=>base+route));
+ for(const route of routes){
+  const page=read(route||'index.html');
+  assert.deepEqual([...page.matchAll(/rel="canonical" href="([^"]+)"/g)].map(([,url])=>url),[base+route]);
+  assert.doesNotMatch(page,/<meta\s+name="(?:robots|googlebot)"[^>]*\b(?:noindex|none)\b/i);
+ }
 });
 test('LLM notes disclose measurement and storage limitations',()=>{
  const txt=read('llms-full.txt');
