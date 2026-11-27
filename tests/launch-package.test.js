@@ -52,3 +52,16 @@ test('LLM notes disclose measurement and storage limitations',()=>{
  assert.match(txt,/自動終了せず/);assert.match(txt,/240/);assert.match(txt,/診断|判定しません/);
 });
 
+
+test('all four public exhibits have an authored search description and canonical navigation',()=>{
+ const pages=['index.html','breath.html','frequency.html','sensory.html'];
+ const descriptions=pages.map(page=>{
+  const [head]=read(page).split('</head>');
+  const hits=[...head.matchAll(/<meta name="description" content="([^"]+)">/g)];
+  assert.equal(hits.length,1,page);
+  return hits[0][1];
+ });
+ assert.equal(new Set(descriptions).size,pages.length);
+ for(const page of pages.slice(1)) assert.ok(html.includes('href="./'+page+'"'),page);
+ assert.doesNotMatch(html,/href="\.\/frequency\.html\?/);
+});
